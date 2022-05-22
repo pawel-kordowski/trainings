@@ -6,6 +6,7 @@ services:
     depends_on:
       - db
       - rabbitmq
+      - worker
     env_file:
       - .env
     ports:
@@ -13,7 +14,22 @@ services:
     volumes:
       - .:/code
     entrypoint: ./utils/app-entrypoint.sh
-    command: make start_app
+    command: uvicorn app.api:app --reload --host 0.0.0.0
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
+    env_file:
+      - .env
+    environment:
+      - ENV_TYPE=production
+    volumes:
+      - .:/code
+    entrypoint: ./utils/app-entrypoint.sh
+    command: celery -A app.tasks worker --loglevel=INFO
   db:
     image: postgres:14.2-alpine3.15
     env_file:

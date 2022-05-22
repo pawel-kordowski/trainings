@@ -1,0 +1,19 @@
+version: 2.1
+
+orbs:
+  docker: circleci/docker@2.1.1
+
+jobs:
+  test:
+    executor: docker/machine
+    steps:
+      - checkout
+      - docker/install-docker-compose
+      - run: |
+          cp .env.example .env
+          docker-compose run --rm app pytest
+
+workflows:
+  test:
+    jobs:
+      - test
