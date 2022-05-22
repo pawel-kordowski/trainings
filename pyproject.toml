@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "trainings"
+version = "0.1.0"
+description = "Application to keep trainings log."
+authors = ["Paweł Kordowski"]
+
+[tool.poetry.dependencies]
+python = "3.10.4"
+fastapi = "0.76.0"
+strawberry-graphql = {version = "0.111.1", extras = ["fastapi"]}
+SQLAlchemy = "1.4.36"
+alembic = "1.7.7"
+uvicorn = {version = "0.17.6", extras = ["standard"]}
+python-jose = {version = "3.3.0", extras = ["cryptography"]}
+passlib = {version = "1.7.4", extras = ["bcrypt"]}
+asyncpg = "0.25.0"
+aio-pika = "7.2.0"
+
+[tool.poetry.dev-dependencies]
+black = "22.3.0"
+mypy = "0.950"
+pylint = "2.13.8"
+flake8 = "4.0.1"
+pytest = "7.1.2"
+ipython = "8.3.0"
+psycopg2 = "2.9.3"
+pytest-asyncio = "0.18.3"
+isort = "5.10.1"
+factory-boy = "3.2.1"
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
