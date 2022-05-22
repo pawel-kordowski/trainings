@@ -287,3 +287,23 @@ async def test_create_user_already_exists(user):
                     email=user.email, hashed_password="hashed_password"
                 )
         assert query_counter.count == 1
+
+
+async def test_get_user__by_email_not_existing():
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.get_user_by_email(email="email") is None
+        assert query_counter.count == 1
+
+
+async def test_get_user_by_email_existing(user):
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.get_user_by_email(
+                email=user.email
+            ) == entities.UserWithHashedPassword(
+                id=user.id, email=user.email, hashed_password=user.hashed_password
+            )
+        assert query_counter.count == 1

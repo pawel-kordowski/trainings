@@ -140,6 +140,19 @@ class PostgresRepository:
             )
         return [results.get(training_id, []) for training_id in training_ids]
 
+    async def get_user_by_email(
+        self, email: str
+    ) -> entities.UserWithHashedPassword | None:
+        sql = select(models.User).where(models.User.email == email)
+
+        results = (await self.session.execute(sql)).first()
+
+        if results:
+            result = results[0]
+            return entities.UserWithHashedPassword(
+                id=result.id, email=result.email, hashed_password=result.hashed_password
+            )
+
     async def get_users_by_ids(self, user_ids: list[UUID]) -> list[entities.User]:
         sql = select(models.User).where(models.User.id.in_(user_ids))
 

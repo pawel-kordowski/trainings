@@ -26,3 +26,8 @@ class Reaction:
 class User:
     id: UUID
     email: str
+
+
+@dataclass
+class UserWithHashedPassword(User):
+    hashed_password: str = None

@@ -1,13 +1,11 @@
 import typing
-from uuid import UUID
 
-from jose import JWTError, jwt
 from starlette.requests import Request
 from starlette.websockets import WebSocket
 from strawberry import BasePermission
 from strawberry.types import Info
 
-from app import config
+from app.jwt_tokens import get_user_id_from_token
 
 
 class IsAuthenticated(BasePermission):
@@ -26,16 +24,10 @@ class IsAuthenticated(BasePermission):
         if "auth" in request.query_params:
             token = request.query_params["auth"]
         if token:
-            try:
-                payload = jwt.decode(
-                    token, config.JWT_SECRET, algorithms=[config.JWT_ALGORITHM]
-                )
-            except JWTError:
-                return False
-            user_id: str = payload.get("sub")
+            user_id = get_user_id_from_token(token)
             if user_id is None:
                 return False
-            info.context["user_id"] = UUID(user_id)
+            info.context["user_id"] = user_id
             return True
 
         return False

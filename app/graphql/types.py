@@ -14,6 +14,11 @@ class Error:
 
 
 @strawberry.type
+class JWT:
+    jwt: str
+
+
+@strawberry.type
 class User:
     id: UUID
     email: str
