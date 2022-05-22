@@ -10,3 +10,8 @@ jobs:
       - checkout
       - docker/install-docker-compose
       - run: docker-compose run --rm app pytest
+
+workflows:
+  test:
+    jobs:
+      - test
