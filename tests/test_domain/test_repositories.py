@@ -7,7 +7,8 @@ from app.database import get_session, engine
 from app.domain.repositories import PostgresRepository
 from app.domain import entities
 from app import models
-from tests.factories import TrainingFactory, ReactionFactory, UserFactory
+from tests.factories import TrainingFactory, ReactionFactory, UserFactory, \
+    FriendshipFactory
 from tests.sqlalchemy_helpers import QueryCounter
 
 
@@ -201,4 +202,46 @@ async def test_get_users_by_ids(db_session):
             assert await repository.get_users_by_ids([user.id for user in users]) == [
                 entities.User(id=user.id, email=user.email) for user in users
             ]
+        assert query_counter.count == 1
+
+
+async def test_get_user_friends_ids_no_friends(user):
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.get_user_friends_ids(user.id) == set()
+        assert query_counter.count == 1
+
+
+async def test_get_user_friends_ids_friends(user):
+    friendship_1 = FriendshipFactory(user_1=user)
+    friendship_2 = FriendshipFactory(user_1=user)
+    FriendshipFactory()
+
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.get_user_friends_ids(user.id) == {friendship_1.user_2.id, friendship_2.user_2.id}
+        assert query_counter.count == 1
+
+
+async def test_get_training_by_id_not_existing(training):
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.get_training_by_id(uuid4()) is None
+        assert query_counter.count == 1
+
+
+async def test_get_training_by_id_existing(training):
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.get_training_by_id(training.id) == entities.Training(
+                id=training.id,
+                name=training.name,
+                start_time=training.start_time,
+                end_time=training.end_time,
+                user_id=training.user_id
+            )
         assert query_counter.count == 1

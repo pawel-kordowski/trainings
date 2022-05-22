@@ -13,6 +13,30 @@ class PostgresRepository:
     def __init__(self, session):
         self.session = session
 
+    async def get_user_friends_ids(self, user_id: UUID) -> set[UUID]:
+        sql = select(models.Friendship.user_2_id).where(models.Friendship.user_1_id == user_id)
+
+        results = (await self.session.execute(sql)).all()
+
+        return {result[0] for result in results}
+
+    async def get_training_by_id(
+        self, training_id: UUID
+    ) -> entities.Training | None:
+        sql = select(models.Training).where(
+            models.Training.id == training_id
+        )
+        results = (await self.session.execute(sql)).first()
+        if results:
+            result = results[0]
+            return entities.Training(
+                id=result.id,
+                start_time=result.start_time,
+                end_time=result.end_time,
+                name=result.name,
+                user_id=result.user_id,
+            )
+
     async def get_user_training_by_id(
         self, user_id: UUID, training_id: UUID
     ) -> entities.Training | None:

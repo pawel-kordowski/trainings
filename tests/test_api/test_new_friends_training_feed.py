@@ -1,9 +1,11 @@
 from datetime import datetime
 
 from app.jwt_tokens import create_access_token
+from tests.factories import FriendshipFactory
 
 
-def test_new_friends_training_feed(client, user):
+def test_new_friends_training_feed(client, db_session):
+    friendship = FriendshipFactory()
     query = """
     subscription {
         newFriendsTrainingFeed {
@@ -31,9 +33,8 @@ def test_new_friends_training_feed(client, user):
     }}
     """
     with client.websocket_connect(
-        "/graphql",
+        f"/graphql?auth={create_access_token(friendship.user_2.id)}",
         subprotocols=["graphql-ws"],
-        headers={"Authorization": f"Bearer {create_access_token(user.id)}"},
     ) as websocket:
         websocket.send_json(
             {
@@ -42,11 +43,18 @@ def test_new_friends_training_feed(client, user):
                 "payload": {"query": query},
             }
         )
-        client.post(
+        response = client.post(
             "/graphql",
             json={
                 "query": create_training_query,
             },
-            headers={"Authorization": f"Bearer {create_access_token(user.id)}"},
+            headers={"Authorization": f"Bearer {create_access_token(friendship.user_1.id)}"},
         )
-        websocket.receive_json()
+        training_id = response.json()["data"]["createTraining"]["id"]
+        data = websocket.receive_json()
+        assert data["payload"]["data"]["newFriendsTrainingFeed"] == {
+            "id": training_id,
+            "name": name,
+            "startTime": start_time.isoformat(),
+            "endTime": end_time.isoformat()
+        }

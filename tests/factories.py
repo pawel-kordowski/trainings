@@ -16,6 +16,15 @@ class UserFactory(SQLAlchemyModelFactory):
     hashed_password = "hashed_password"
 
 
+class FriendshipFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = models.Friendship
+        sqlalchemy_session_persistence = "commit"
+
+    user_1 = SubFactory(UserFactory)
+    user_2 = SubFactory(UserFactory)
+
+
 class TrainingFactory(SQLAlchemyModelFactory):
     class Meta:
         model = models.Training

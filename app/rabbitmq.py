@@ -1,14 +1,17 @@
 import json
+from uuid import UUID
 
 import aio_pika
 
-RABBITMQ_URL = "amqp://guest:guest@rabbitmq/"
+from app.config import RABBITMQ_URL
+
+
+def get_new_training_queue_name(user_id: UUID) -> str:
+    return f"new-training-{user_id}"
 
 
 async def publish_message(message, routing_key):
-    connection = await aio_pika.connect_robust(
-        "amqp://guest:guest@rabbitmq/",
-    )
+    connection = await aio_pika.connect_robust(RABBITMQ_URL)
 
     async with connection:
         channel = await connection.channel()
