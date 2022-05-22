@@ -9,7 +9,9 @@ jobs:
     steps:
       - checkout
       - docker/install-docker-compose
-      - run: docker-compose run --rm app pytest
+      - run: |
+          cp .env.example .env
+          docker-compose run --rm app pytest
 
 workflows:
   test:
