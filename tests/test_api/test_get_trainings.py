@@ -74,7 +74,7 @@ def test_query_user_trainings(client, db_session, user):
                 user_id=_user.id,
                 training_id=training.id,
                 reaction_type=ReactionTypeEnum.like,
-                created_at=datetime.fromisoformat("2020-10-10T10:00:00")
+                created_at=datetime.fromisoformat("2020-10-10T10:00:00"),
             )
             for _ in range(n)
         ]

@@ -3,10 +3,12 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import count
 
 from app import models
 from app.domain import entities
+from app.domain.exceptions import EmailAlreadyExists
 
 
 class PostgresRepository:
@@ -85,6 +87,15 @@ class PostgresRepository:
             name=training.name,
             user_id=training.user_id,
         )
+
+    async def create_user(self, email: str, hashed_password: str) -> entities.User:
+        user = models.User(email=email, hashed_password=hashed_password)
+        self.session.add(user)
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            raise EmailAlreadyExists()
+        return entities.User(id=user.id, email=user.email)
 
     async def get_reaction_count_by_training_ids(
         self, training_ids: list[UUID]

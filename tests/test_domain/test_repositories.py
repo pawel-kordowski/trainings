@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
 
+import pytest
 from sqlalchemy import select
 
 from app.database import get_session, engine
+from app.domain.exceptions import EmailAlreadyExists
 from app.domain.repositories import PostgresRepository
 from app.domain import entities
 from app import models
@@ -253,4 +255,35 @@ async def test_get_training_by_id_existing(training):
                 end_time=training.end_time,
                 user_id=training.user_id,
             )
+        assert query_counter.count == 1
+
+
+async def test_create_user(db_session):
+    email = "email"
+    hashed_password = "hashed_password"
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            user = await repository.create_user(
+                email=email, hashed_password=hashed_password
+            )
+        assert query_counter.count == 1
+
+    sql = select(models.User)
+    users_from_db = db_session.execute(sql).all()
+    assert len(users_from_db) == 1
+    user_from_db = users_from_db[0][0]
+    assert user_from_db.id == user.id
+    assert user_from_db.email == user.email == email
+    assert user_from_db.hashed_password == hashed_password
+
+
+async def test_create_user_already_exists(user):
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            with pytest.raises(EmailAlreadyExists):
+                await repository.create_user(
+                    email=user.email, hashed_password="hashed_password"
+                )
         assert query_counter.count == 1

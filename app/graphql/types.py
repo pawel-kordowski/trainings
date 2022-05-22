@@ -9,6 +9,11 @@ ReactionTypeEnum = strawberry.enum(enums.ReactionTypeEnum)
 
 
 @strawberry.type
+class Error:
+    message: str
+
+
+@strawberry.type
 class User:
     id: UUID
     email: str

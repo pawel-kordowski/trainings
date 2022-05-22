@@ -78,14 +78,14 @@ def test_query_existing_training(client, db_session, user):
                     user_id=_user.id,
                     training_id=training.id,
                     reaction_type=ReactionTypeEnum.like,
-                    created_at=datetime.fromisoformat("2020-10-10T10:00:00")
+                    created_at=datetime.fromisoformat("2020-10-10T10:00:00"),
                 ),
                 Reaction(
                     id=uuid4(),
                     user_id=_user.id,
                     training_id=another_training.id,
                     reaction_type=ReactionTypeEnum.like,
-                    created_at=datetime.fromisoformat("2020-10-10T10:00:00")
+                    created_at=datetime.fromisoformat("2020-10-10T10:00:00"),
                 ),
             ]
         )

@@ -3,10 +3,13 @@ from strawberry.types import Info
 
 from app import tasks
 from app.database import get_session
+from app.domain.exceptions import EmailAlreadyExists
 from app.domain.repositories import PostgresRepository
-from app.graphql.input_types import TrainingInput
+from app.graphql.exceptions import InvalidEmail, InvalidPassword
+from app.graphql.input_types import TrainingInput, UserInput
 from app.graphql.permissions import IsAuthenticated
-from app.graphql.types import Training
+from app.graphql.types import Training, User, Error
+from app.passwords import get_password_hash
 
 
 async def create_training(info: Info, input: TrainingInput) -> Training:
@@ -28,8 +31,26 @@ async def create_training(info: Info, input: TrainingInput) -> Training:
     )
 
 
+async def create_user(input: UserInput) -> User | Error:
+    try:
+        input.validate()
+    except (InvalidEmail, InvalidPassword) as e:
+        return Error(message=e.message)
+    hashed_password = get_password_hash(input.password)
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        try:
+            user = await repository.create_user(
+                email=input.email, hashed_password=hashed_password
+            )
+        except EmailAlreadyExists:
+            return Error(message="Email address already taken")
+    return User(id=user.id, email=user.email)
+
+
 @strawberry.type
 class Mutation:
     create_training: Training = strawberry.mutation(
         resolver=create_training, permission_classes=[IsAuthenticated]
     )
+    create_user: User | Error = strawberry.mutation(resolver=create_user)
