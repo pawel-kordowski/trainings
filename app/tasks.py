@@ -8,7 +8,7 @@ from app.database import get_session
 from app.domain.repositories import PostgresRepository
 from app.rabbitmq import publish_message, get_new_training_queue_name
 
-app = Celery('tasks', broker=RABBITMQ_URL)
+app = Celery("tasks", broker=RABBITMQ_URL)
 
 
 async def async_handle_new_training(user_id: str, training_id: str):

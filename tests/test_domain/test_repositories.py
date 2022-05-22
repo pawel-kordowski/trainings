@@ -7,8 +7,12 @@ from app.database import get_session, engine
 from app.domain.repositories import PostgresRepository
 from app.domain import entities
 from app import models
-from tests.factories import TrainingFactory, ReactionFactory, UserFactory, \
-    FriendshipFactory
+from tests.factories import (
+    TrainingFactory,
+    ReactionFactory,
+    UserFactory,
+    FriendshipFactory,
+)
 from tests.sqlalchemy_helpers import QueryCounter
 
 
@@ -221,7 +225,10 @@ async def test_get_user_friends_ids_friends(user):
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
-            assert await repository.get_user_friends_ids(user.id) == {friendship_1.user_2.id, friendship_2.user_2.id}
+            assert await repository.get_user_friends_ids(user.id) == {
+                friendship_1.user_2.id,
+                friendship_2.user_2.id,
+            }
         assert query_counter.count == 1
 
 
@@ -237,11 +244,13 @@ async def test_get_training_by_id_existing(training):
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
-            assert await repository.get_training_by_id(training.id) == entities.Training(
+            assert await repository.get_training_by_id(
+                training.id
+            ) == entities.Training(
                 id=training.id,
                 name=training.name,
                 start_time=training.start_time,
                 end_time=training.end_time,
-                user_id=training.user_id
+                user_id=training.user_id,
             )
         assert query_counter.count == 1

@@ -12,7 +12,9 @@ from app.rabbitmq import get_message, get_new_training_queue_name
 
 
 async def get_new_friends_training(info: Info):
-    async for message in get_message(get_new_training_queue_name(info.context["user_id"])):
+    async for message in get_message(
+        get_new_training_queue_name(info.context["user_id"])
+    ):
         async with get_session() as s:
             repository = PostgresRepository(s)
             training = await repository.get_training_by_id(UUID(message["training_id"]))

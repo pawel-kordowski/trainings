@@ -48,7 +48,9 @@ def test_new_friends_training_feed(client, db_session):
             json={
                 "query": create_training_query,
             },
-            headers={"Authorization": f"Bearer {create_access_token(friendship.user_1.id)}"},
+            headers={
+                "Authorization": f"Bearer {create_access_token(friendship.user_1.id)}"
+            },
         )
         training_id = response.json()["data"]["createTraining"]["id"]
         data = websocket.receive_json()
@@ -56,5 +58,5 @@ def test_new_friends_training_feed(client, db_session):
             "id": training_id,
             "name": name,
             "startTime": start_time.isoformat(),
-            "endTime": end_time.isoformat()
+            "endTime": end_time.isoformat(),
         }
