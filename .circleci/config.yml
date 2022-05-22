@@ -5,6 +5,7 @@ orbs:
 
 jobs:
   test:
+    executor: docker/machine
     steps:
       - checkout
       - docker/install-docker-compose
