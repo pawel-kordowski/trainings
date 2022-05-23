@@ -38,7 +38,7 @@ async def get_user_trainings(info: Info) -> list[Training]:
 
 
 @strawberry.type
-class Query:
+class TrainingQuery:
     training: Training | None = strawberry.field(
         resolver=get_training, permission_classes=[IsAuthenticated]
     )

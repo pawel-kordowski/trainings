@@ -6,7 +6,7 @@ from celery import Celery
 from app.config import RABBITMQ_URL
 from app.database import get_session
 from app.domain.repositories import PostgresRepository
-from app.rabbitmq import publish_message, get_new_training_queue_name
+from app.rabbitmq import get_new_training_queue_name, publish_message
 
 app = Celery("tasks", broker=RABBITMQ_URL)
 

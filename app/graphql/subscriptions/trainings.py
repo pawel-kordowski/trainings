@@ -28,7 +28,7 @@ async def get_new_friends_training(info: Info):
 
 
 @strawberry.type
-class Subscription:
+class TrainingSubscription:
     new_friends_training_feed: AsyncGenerator[Training, None] = strawberry.subscription(
         resolver=get_new_friends_training, permission_classes=[IsAuthenticated]
     )

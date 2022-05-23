@@ -4,11 +4,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 
+from app import models
 from app.database import get_session, engine
 from app.domain.exceptions import EmailAlreadyExists
 from app.domain.repositories import PostgresRepository
 from app.domain import entities
-from app import models
 from tests.factories import (
     TrainingFactory,
     ReactionFactory,

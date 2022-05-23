@@ -39,15 +39,3 @@ async def get_reactions_by_training_ids(
 
 
 get_reactions_by_training_ids_loader = DataLoader(load_fn=get_reactions_by_training_ids)
-
-
-async def get_users_by_ids(keys: list[UUID]) -> list[graphql_types.User]:
-    async with get_session() as s:
-        repository = PostgresRepository(s)
-        return [
-            graphql_types.User(id=user.id, email=user.email) if user else None
-            for user in await repository.get_users_by_ids(keys)
-        ]
-
-
-get_users_by_ids_loader = DataLoader(load_fn=get_users_by_ids)
