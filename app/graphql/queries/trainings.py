@@ -12,7 +12,9 @@ from app.graphql.types import Training
 async def get_training(info: Info, id: UUID) -> Training | None:
     async with get_session() as s:
         repository = PostgresRepository(s)
-        training = await repository.get_user_training_by_id(info.context["user_id"], id)
+        training = await repository.get_training_by_id(
+            request_user_id=info.context["user_id"], training_id=id
+        )
     if training:
         return Training(
             id=training.id,

@@ -29,18 +29,11 @@ class PostgresRepository:
 
         return {result[0] for result in results}
 
-    async def get_training_by_id(self, training_id: UUID) -> entities.Training | None:
-        sql = select(models.Training).where(models.Training.id == training_id)
-        results = (await self.session.execute(sql)).first()
-        if results:
-            result = results[0]
-            return entities.Training.from_model(result)
-
-    async def get_user_training_by_id(
-        self, user_id: UUID, training_id: UUID
+    async def get_training_by_id(
+        self, request_user_id: UUID, training_id: UUID
     ) -> entities.Training | None:
-        sql = select(models.Training).where(
-            models.Training.id == training_id, models.Training.user_id == user_id
+        sql = self.get_visible_trainings_for_user_query(request_user_id).where(
+            models.Training.id == training_id
         )
         results = (await self.session.execute(sql)).first()
         if results:

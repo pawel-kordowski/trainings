@@ -19,35 +19,22 @@ from tests.factories import (
 from tests.sqlalchemy_helpers import QueryCounter
 
 
-async def test_get_user_training_by_id_returns_none_when_user_id_not_matching(training):
-    async with get_session() as s:
-        repository = PostgresRepository(s)
-        with QueryCounter(engine.sync_engine) as query_counter:
-            assert (
-                await repository.get_user_training_by_id(
-                    user_id=uuid4(), training_id=training.id
-                )
-                is None
-            )
-        assert query_counter.count == 1
-
-
-async def test_get_user_training_by_id_returns_none_when_training_id_not_matching(
+async def test_get_training_by_id_returns_none_when_training_id_not_matching(
     user, training
 ):
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
             assert (
-                await repository.get_user_training_by_id(
-                    user_id=user.id, training_id=uuid4()
+                await repository.get_training_by_id(
+                    request_user_id=user.id, training_id=uuid4()
                 )
                 is None
             )
         assert query_counter.count == 1
 
 
-async def test_get_user_training_by_id_existing_returns_training(user, training):
+async def test_get_training_by_id_existing_returns_training(user, training):
     # another user training
     TrainingFactory()
     # another training of the current user
@@ -55,8 +42,8 @@ async def test_get_user_training_by_id_existing_returns_training(user, training)
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
-            assert await repository.get_user_training_by_id(
-                user_id=user.id, training_id=training.id
+            assert await repository.get_training_by_id(
+                request_user_id=user.id, training_id=training.id
             ) == entities.Training(
                 id=training.id,
                 start_time=training.start_time,
@@ -349,7 +336,7 @@ async def test_get_training_by_id_not_existing(training):
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
-            assert await repository.get_training_by_id(uuid4()) is None
+            assert await repository.get_training_by_id(uuid4(), uuid4()) is None
         assert query_counter.count == 1
 
 
@@ -358,7 +345,7 @@ async def test_get_training_by_id_existing(training):
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
             assert await repository.get_training_by_id(
-                training.id
+                training.user_id, training.id
             ) == entities.Training(
                 id=training.id,
                 name=training.name,
