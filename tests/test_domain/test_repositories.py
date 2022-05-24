@@ -9,6 +9,7 @@ from app.database import get_session, engine
 from app.domain.exceptions import EmailAlreadyExists
 from app.domain.repositories import PostgresRepository
 from app.domain import entities
+from app.enums import TrainingVisibilityEnum
 from tests.factories import (
     TrainingFactory,
     ReactionFactory,
@@ -66,13 +67,121 @@ async def test_get_user_training_by_id_existing_returns_training(user, training)
         assert query_counter.count == 1
 
 
-async def test_get_user_trainings_returns_empty_list_when_no_trainings_for_user(user):
+@pytest.mark.parametrize(
+    "training_visibility,profile_training_visibility,expected_count",
+    (
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.private, 0),
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.only_friends, 0),
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.public, 0),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.private, 0),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.only_friends, 0),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.public, 0),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.private, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.only_friends, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.public, 1),
+        (None, TrainingVisibilityEnum.private, 0),
+        (None, TrainingVisibilityEnum.only_friends, 0),
+        (None, TrainingVisibilityEnum.public, 1),
+    ),
+)
+async def test_get_user_trainings_takes_permissions_into_account_not_friends(
+    user, training_visibility, profile_training_visibility, expected_count
+):
     # another user training
-    TrainingFactory()
+    training = TrainingFactory(
+        visibility=training_visibility,
+        user__profile__training_visibility=profile_training_visibility,
+    )
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
-            assert await repository.get_user_trainings(user_id=user.id) == []
+            assert (
+                len(
+                    await repository.get_user_trainings(
+                        user_id=training.user.id, request_user_id=user.id
+                    )
+                )
+                == expected_count
+            )
+        assert query_counter.count == 1
+
+
+@pytest.mark.parametrize(
+    "training_visibility,profile_training_visibility,expected_count",
+    (
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.private, 0),
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.only_friends, 0),
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.public, 0),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.private, 1),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.only_friends, 1),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.public, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.private, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.only_friends, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.public, 1),
+        (None, TrainingVisibilityEnum.private, 0),
+        (None, TrainingVisibilityEnum.only_friends, 1),
+        (None, TrainingVisibilityEnum.public, 1),
+    ),
+)
+async def test_get_user_trainings_takes_permissions_into_account_friends(
+    user, training_visibility, profile_training_visibility, expected_count
+):
+    # another user training
+    training = TrainingFactory(
+        visibility=training_visibility,
+        user__profile__training_visibility=profile_training_visibility,
+    )
+    FriendshipFactory(user_1=user, user_2=training.user)
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert (
+                len(
+                    await repository.get_user_trainings(
+                        user_id=training.user.id, request_user_id=user.id
+                    )
+                )
+                == expected_count
+            )
+        assert query_counter.count == 1
+
+
+@pytest.mark.parametrize(
+    "training_visibility,profile_training_visibility,expected_count",
+    (
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.private, 1),
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.only_friends, 1),
+        (TrainingVisibilityEnum.private, TrainingVisibilityEnum.public, 1),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.private, 1),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.only_friends, 1),
+        (TrainingVisibilityEnum.only_friends, TrainingVisibilityEnum.public, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.private, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.only_friends, 1),
+        (TrainingVisibilityEnum.public, TrainingVisibilityEnum.public, 1),
+        (None, TrainingVisibilityEnum.private, 1),
+        (None, TrainingVisibilityEnum.only_friends, 1),
+        (None, TrainingVisibilityEnum.public, 1),
+    ),
+)
+async def test_get_user_trainings_takes_permissions_into_account_own_training(
+    db_session, training_visibility, profile_training_visibility, expected_count
+):
+    # another user training
+    training = TrainingFactory(
+        visibility=training_visibility,
+        user__profile__training_visibility=profile_training_visibility,
+    )
+    async with get_session() as s:
+        repository = PostgresRepository(s)
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert (
+                len(
+                    await repository.get_user_trainings(
+                        user_id=training.user.id, request_user_id=training.user.id
+                    )
+                )
+                == expected_count
+            )
         assert query_counter.count == 1
 
 
@@ -97,7 +206,9 @@ async def test_get_user_trainings_returns_ordered_list_when_trainings(user):
     async with get_session() as s:
         repository = PostgresRepository(s)
         with QueryCounter(engine.sync_engine) as query_counter:
-            assert await repository.get_user_trainings(user_id=user.id) == [
+            assert await repository.get_user_trainings(
+                user_id=user.id, request_user_id=user.id
+            ) == [
                 entities.Training(
                     id=training.id,
                     start_time=training.start_time,
@@ -267,7 +378,7 @@ async def test_create_user(db_session):
             user = await repository.create_user(
                 email=email, hashed_password=hashed_password
             )
-        assert query_counter.count == 1
+        assert query_counter.count == 2
 
     sql = select(models.User)
     users_from_db = db_session.execute(sql).all()
@@ -276,6 +387,11 @@ async def test_create_user(db_session):
     assert user_from_db.id == user.id
     assert user_from_db.email == user.email == email
     assert user_from_db.hashed_password == hashed_password
+
+    sql = select(models.Profile)
+    profiles_from_db = db_session.execute(sql).all()
+    assert len(profiles_from_db) == 1
+    assert profiles_from_db[0][0].user_id == user.id
 
 
 async def test_create_user_already_exists(user):

@@ -1,9 +1,10 @@
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
+from app.enums import TrainingVisibilityEnum
 from app.models.base import Base
 
 
@@ -15,6 +16,7 @@ class Training(Base):
     end_time = Column(DateTime)
     name = Column(String)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    visibility = Column(Enum(TrainingVisibilityEnum))
 
     user = relationship("User", back_populates="trainings")
     reactions = relationship(

@@ -16,3 +16,4 @@ class TrainingFactory(SQLAlchemyModelFactory):
     end_time = datetime.fromisoformat("2020-10-10T11:00:00")
     name = "Test"
     user = SubFactory(UserFactory)
+    visibility = None

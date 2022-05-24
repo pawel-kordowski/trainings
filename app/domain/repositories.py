@@ -2,23 +2,28 @@ from collections import defaultdict
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql.functions import count
+from sqlalchemy.sql.functions import coalesce, count
 
 from app import models
 from app.domain import entities
 from app.domain.exceptions import EmailAlreadyExists
+from app.enums import TrainingVisibilityEnum
 
 
 class PostgresRepository:
     def __init__(self, session):
         self.session = session
 
-    async def get_user_friends_ids(self, user_id: UUID) -> set[UUID]:
-        sql = select(models.Friendship.user_2_id).where(
+    @staticmethod
+    def get_user_friends_ids_query(user_id: UUID):
+        return select(models.Friendship.user_2_id).where(
             models.Friendship.user_1_id == user_id
         )
+
+    async def get_user_friends_ids(self, user_id: UUID) -> set[UUID]:
+        sql = self.get_user_friends_ids_query(user_id)
 
         results = (await self.session.execute(sql)).all()
 
@@ -54,10 +59,29 @@ class PostgresRepository:
                 user_id=result.user_id,
             )
 
-    async def get_user_trainings(self, user_id: UUID) -> list[entities.Training]:
+    async def get_user_trainings(
+        self, user_id: UUID, request_user_id: UUID
+    ) -> list[entities.Training]:
+        training_visibility = coalesce(
+            models.Training.visibility, models.Profile.training_visibility
+        )
         sql = (
             select(models.Training)
-            .where(models.Training.user_id == user_id)
+            .join(models.User)
+            .join(models.Profile)
+            .where(
+                models.Training.user_id == user_id,
+                or_(
+                    models.Training.user_id == request_user_id,
+                    training_visibility == TrainingVisibilityEnum.public,
+                    and_(
+                        training_visibility == TrainingVisibilityEnum.only_friends,
+                        models.Training.user_id.in_(
+                            self.get_user_friends_ids_query(request_user_id)
+                        ),
+                    ),
+                ),
+            )
             .order_by(models.Training.start_time.desc())
         )
         trainings = (await self.session.execute(sql)).scalars()
@@ -90,7 +114,8 @@ class PostgresRepository:
 
     async def create_user(self, email: str, hashed_password: str) -> entities.User:
         user = models.User(email=email, hashed_password=hashed_password)
-        self.session.add(user)
+        profile = models.Profile(user=user)
+        self.session.add_all([user, profile])
         try:
             await self.session.commit()
         except IntegrityError:

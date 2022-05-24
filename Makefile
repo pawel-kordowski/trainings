@@ -12,3 +12,9 @@ test:
 
 isort:
 	docker-compose run --rm app isort app/
+
+upgrade-db:
+	docker-compose run --rm app alembic upgrade head
+
+migration:
+	docker-compose run --rm app alembic revision --autogenerate -m $(m)

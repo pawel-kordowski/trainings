@@ -20,3 +20,5 @@ class User(Base):
     reactions = relationship(
         "Reaction", back_populates="user", cascade="all, delete-orphan"
     )
+    # friends = relationship("Friendship")
+    profile = relationship("Profile", back_populates="user", uselist=False)

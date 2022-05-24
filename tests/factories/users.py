@@ -1,4 +1,4 @@
-from factory import Sequence
+from factory import Sequence, RelatedFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from app import models
@@ -12,3 +12,7 @@ class UserFactory(SQLAlchemyModelFactory):
 
     email = Sequence(lambda n: f"user_{n}@test.com")
     hashed_password = get_password_hash("password")
+    profile = RelatedFactory(
+        "tests.factories.profiles.ProfileFactory",
+        factory_related_name="user",
+    )

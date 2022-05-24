@@ -22,10 +22,12 @@ async def get_training(info: Info, id: UUID) -> Training | None:
         )
 
 
-async def get_user_trainings(info: Info) -> list[Training]:
+async def get_user_trainings(info: Info, user_id: UUID) -> list[Training]:
     async with get_session() as s:
         repository = PostgresRepository(s)
-        trainings = await repository.get_user_trainings(info.context["user_id"])
+        trainings = await repository.get_user_trainings(
+            user_id=user_id, request_user_id=info.context["user_id"]
+        )
     return [
         Training(
             id=training.id,

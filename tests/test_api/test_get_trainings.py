@@ -9,12 +9,12 @@ from tests.sqlalchemy_helpers import QueryCounter
 
 
 def test_query_trainings_requires_authorization(client):
-    query = """
-    {
-        trainings{
+    query = f"""
+    {{
+        trainings(userId: "{uuid4()}"){{
             name
-        }
-    }
+        }}
+    }}
     """
     response = client.post(
         "/graphql",
@@ -27,13 +27,13 @@ def test_query_trainings_requires_authorization(client):
     assert response_json["errors"][0]["message"] == "User is not authenticated"
 
 
-def test_query_not_existing_trainings(client):
-    query = """
-    {
-        trainings{
+def test_query_not_existing_trainings(client, user):
+    query = f"""
+    {{
+        trainings(userId: "{user.id}"){{
             name
-        }
-    }
+        }}
+    }}
     """
     response = client.post(
         "/graphql",
@@ -97,24 +97,24 @@ def test_query_user_trainings(client, db_session, user):
     )
     db_session.commit()
 
-    query = """
-    {
-        trainings{
+    query = f"""
+    {{
+        trainings(userId: "{user.id}"){{
             id
             name
             startTime
             endTime
             reactionsCount
-            reactions{
+            reactions{{
                 id
                 reactionType
-                user{
+                user{{
                     id
                     email
-                }
-            }
-        }
-    }
+                }}
+            }}
+        }}
+    }}
     """
 
     with QueryCounter(engine.sync_engine) as query_counter:
