@@ -34,13 +34,7 @@ class PostgresRepository:
         results = (await self.session.execute(sql)).first()
         if results:
             result = results[0]
-            return entities.Training(
-                id=result.id,
-                start_time=result.start_time,
-                end_time=result.end_time,
-                name=result.name,
-                user_id=result.user_id,
-            )
+            return entities.Training.from_model(result)
 
     async def get_user_training_by_id(
         self, user_id: UUID, training_id: UUID
@@ -51,13 +45,7 @@ class PostgresRepository:
         results = (await self.session.execute(sql)).first()
         if results:
             result = results[0]
-            return entities.Training(
-                id=result.id,
-                start_time=result.start_time,
-                end_time=result.end_time,
-                name=result.name,
-                user_id=result.user_id,
-            )
+            return entities.Training.from_model(result)
 
     async def get_user_trainings(
         self, user_id: UUID, request_user_id: UUID
@@ -85,16 +73,7 @@ class PostgresRepository:
             .order_by(models.Training.start_time.desc())
         )
         trainings = (await self.session.execute(sql)).scalars()
-        return [
-            entities.Training(
-                id=training.id,
-                start_time=training.start_time,
-                end_time=training.end_time,
-                name=training.name,
-                user_id=training.user_id,
-            )
-            for training in trainings
-        ]
+        return [entities.Training.from_model(training) for training in trainings]
 
     async def create_training(
         self, user_id: UUID, name: str, start_time: datetime, end_time: datetime | None
@@ -104,13 +83,7 @@ class PostgresRepository:
         )
         self.session.add(training)
         await self.session.commit()
-        return entities.Training(
-            id=training.id,
-            start_time=training.start_time,
-            end_time=training.end_time,
-            name=training.name,
-            user_id=training.user_id,
-        )
+        return entities.Training.from_model(training)
 
     async def create_user(self, email: str, hashed_password: str) -> entities.User:
         user = models.User(email=email, hashed_password=hashed_password)
@@ -120,7 +93,7 @@ class PostgresRepository:
             await self.session.commit()
         except IntegrityError:
             raise EmailAlreadyExists()
-        return entities.User(id=user.id, email=user.email)
+        return entities.User.from_model(user)
 
     async def get_reaction_count_by_training_ids(
         self, training_ids: list[UUID]
@@ -156,13 +129,7 @@ class PostgresRepository:
 
         results = defaultdict(list)
         for reaction in reactions:
-            results[reaction.training_id].append(
-                entities.Reaction(
-                    id=reaction.id,
-                    reaction_type=reaction.reaction_type,
-                    user_id=reaction.user_id,
-                )
-            )
+            results[reaction.training_id].append(entities.Reaction.from_model(reaction))
         return [results.get(training_id, []) for training_id in training_ids]
 
     async def get_user_by_email(
@@ -174,16 +141,12 @@ class PostgresRepository:
 
         if results:
             result = results[0]
-            return entities.UserWithHashedPassword(
-                id=result.id, email=result.email, hashed_password=result.hashed_password
-            )
+            return entities.UserWithHashedPassword.from_model(result)
 
     async def get_users_by_ids(self, user_ids: list[UUID]) -> list[entities.User]:
         sql = select(models.User).where(models.User.id.in_(user_ids))
 
         users = (await self.session.execute(sql)).scalars()
 
-        users_by_id = {
-            user.id: entities.User(id=user.id, email=user.email) for user in users
-        }
+        users_by_id = {user.id: entities.User.from_model(user) for user in users}
         return [users_by_id[user_id] for user_id in user_ids]
