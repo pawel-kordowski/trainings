@@ -50,30 +50,34 @@ class PostgresRepository:
     async def get_user_trainings(
         self, user_id: UUID, request_user_id: UUID
     ) -> list[entities.Training]:
+        sql = self.get_visible_trainings_for_user_query(request_user_id).where(
+            models.Training.user_id == user_id
+        )
+        trainings = (await self.session.execute(sql)).scalars()
+        return [entities.Training.from_model(training) for training in trainings]
+
+    def get_visible_trainings_for_user_query(self, user_id):
         training_visibility = coalesce(
             models.Training.visibility, models.Profile.training_visibility
         )
-        sql = (
+        return (
             select(models.Training)
             .join(models.User)
             .join(models.Profile)
             .where(
-                models.Training.user_id == user_id,
                 or_(
-                    models.Training.user_id == request_user_id,
+                    models.Training.user_id == user_id,
                     training_visibility == TrainingVisibilityEnum.public,
                     and_(
                         training_visibility == TrainingVisibilityEnum.only_friends,
                         models.Training.user_id.in_(
-                            self.get_user_friends_ids_query(request_user_id)
+                            self.get_user_friends_ids_query(user_id)
                         ),
                     ),
                 ),
             )
             .order_by(models.Training.start_time.desc())
         )
-        trainings = (await self.session.execute(sql)).scalars()
-        return [entities.Training.from_model(training) for training in trainings]
 
     async def create_training(
         self, user_id: UUID, name: str, start_time: datetime, end_time: datetime | None
