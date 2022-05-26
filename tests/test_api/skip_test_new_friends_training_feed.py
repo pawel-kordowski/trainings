@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.jwt_tokens import create_access_token
-from tests.factories import FriendshipFactory
+from tests.test_domain.test_repositories.factories import FriendshipFactory
 
 
 def test_new_friends_training_feed(client, db_session):

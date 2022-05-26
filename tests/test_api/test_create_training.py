@@ -1,13 +1,12 @@
 from datetime import datetime
-from unittest.mock import ANY
+from unittest.mock import patch
+from uuid import uuid4
 
-from sqlalchemy import select
-
+from app.domain import entities
 from app.jwt_tokens import create_access_token
-from app.models import Training
 
 
-def test_add_training_requires_authorization(client):
+def test_create_training_requires_authorization(client):
     query = """
     mutation {
         createTraining(
@@ -29,10 +28,22 @@ def test_add_training_requires_authorization(client):
     assert response_json["errors"][0]["message"] == "User is not authenticated"
 
 
-def test_add_training_saves_training_in_db(client, db_session, user):
+@patch("app.graphql.mutations.trainings.TrainingService", autospec=True)
+def test_create_training_calls_training_service_create_training(
+    mocked_training_service, client
+):
     name = "New training"
     start_time = datetime.fromisoformat("2020-10-10T10:00:00")
     end_time = datetime.fromisoformat("2020-10-10T11:00:00")
+    user_id = uuid4()
+    training_id = uuid4()
+    mocked_training_service.create_training.return_value = entities.Training(
+        id=training_id,
+        name=name,
+        start_time=start_time,
+        end_time=end_time,
+        user_id=user_id,
+    )
     query = f"""
     mutation {{
         createTraining(
@@ -52,22 +63,18 @@ def test_add_training_saves_training_in_db(client, db_session, user):
     response = client.post(
         "/graphql",
         json={"query": query},
-        headers={"Authorization": f"Bearer {create_access_token(user.id)}"},
+        headers={"Authorization": f"Bearer {create_access_token(user_id)}"},
     )
 
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["data"]["createTraining"] == {
-        "id": ANY,
+        "id": str(training_id),
         "name": name,
         "startTime": start_time.isoformat(),
         "endTime": end_time.isoformat(),
     }
 
-    sql = select(Training)
-    trainings_from_db = db_session.execute(sql).all()
-    assert len(trainings_from_db) == 1
-    training = trainings_from_db[0][0]
-    assert training.name == name
-    assert training.start_time == start_time
-    assert training.end_time == end_time
+    mocked_training_service.create_training.assert_awaited_once_with(
+        user_id=user_id, name=name, start_time=start_time, end_time=end_time
+    )

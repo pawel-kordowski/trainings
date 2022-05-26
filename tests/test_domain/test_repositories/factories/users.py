@@ -13,6 +13,6 @@ class UserFactory(SQLAlchemyModelFactory):
     email = Sequence(lambda n: f"user_{n}@test.com")
     hashed_password = get_password_hash("password")
     profile = RelatedFactory(
-        "tests.factories.profiles.ProfileFactory",
+        "tests.test_domain.test_repositories.factories.profiles.ProfileFactory",
         factory_related_name="user",
     )

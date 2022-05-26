@@ -3,7 +3,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from app import models
 from app.enums import TrainingVisibilityEnum
-from tests.factories import UserFactory
+from tests.test_domain.test_repositories.factories import UserFactory
 
 
 class ProfileFactory(SQLAlchemyModelFactory):

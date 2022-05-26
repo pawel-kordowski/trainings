@@ -5,8 +5,8 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from app import models
 from app.enums import ReactionTypeEnum
-from tests.factories.trainings import TrainingFactory
-from tests.factories.users import UserFactory
+from tests.test_domain.test_repositories.factories.trainings import TrainingFactory
+from tests.test_domain.test_repositories.factories.users import UserFactory
 
 
 class ReactionFactory(SQLAlchemyModelFactory):

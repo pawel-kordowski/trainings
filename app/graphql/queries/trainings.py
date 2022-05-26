@@ -3,42 +3,25 @@ from uuid import UUID
 import strawberry
 from strawberry.types import Info
 
-from app.database import get_session
-from app.domain.repositories import PostgresRepository
+from app.domain.services.training_service import TrainingService
 from app.graphql.permissions import IsAuthenticated
 from app.graphql.types import Training
 
 
 async def get_training(info: Info, id: UUID) -> Training | None:
-    async with get_session() as s:
-        repository = PostgresRepository(s)
-        training = await repository.get_training_by_id(
-            request_user_id=info.context["user_id"], training_id=id
-        )
+    training = await TrainingService.get_training(
+        request_user_id=info.context["user_id"],
+        training_id=id,
+    )
     if training:
-        return Training(
-            id=training.id,
-            start_time=training.start_time,
-            end_time=training.end_time,
-            name=training.name,
-        )
+        return Training.from_entity(training)
 
 
 async def get_user_trainings(info: Info, user_id: UUID) -> list[Training]:
-    async with get_session() as s:
-        repository = PostgresRepository(s)
-        trainings = await repository.get_user_trainings(
-            user_id=user_id, request_user_id=info.context["user_id"]
-        )
-    return [
-        Training(
-            id=training.id,
-            start_time=training.start_time,
-            end_time=training.end_time,
-            name=training.name,
-        )
-        for training in trainings
-    ]
+    trainings = await TrainingService.get_user_trainings(
+        request_user_id=info.context["user_id"], user_id=user_id
+    )
+    return [Training.from_entity(training) for training in trainings]
 
 
 @strawberry.type

@@ -1,92 +1,54 @@
-from unittest.mock import ANY
+from unittest.mock import patch
 
-from app.jwt_tokens import get_user_id_from_token
+from app.domain.services.exceptions import LoginFailed
 
 
-def test_login_user_not_existing_user(client, db_session):
-    query = """
-    mutation {
-        loginUser(
-            input:{
-                email: "email"
-                password: "password"
-            }
-        ) {
-            __typename
-            ... on JWT{
-                jwt
-            }
-            ... on Error{
-                message
-            }
+@patch("app.graphql.mutations.users.UserService")
+class TestLoginUser:
+    email = "email"
+    password = "password"
+
+    def get_query(self):
+        return f"""
+        mutation {{
+            loginUser(
+                input:{{
+                    email: "{self.email}"
+                    password: "{self.password}"
+                }}
+            ) {{
+                __typename
+                ... on JWT{{
+                    jwt
+                }}
+                ... on Error{{
+                    message
+                }}
+            }}
+        }}
+        """
+
+    def test_failed(self, mocked_user_service, client):
+        mocked_user_service.get_user_jwt.side_effect = LoginFailed()
+
+        response = client.post("/graphql", json={"query": self.get_query()})
+
+        assert response.status_code == 200
+        response_json = response.json()
+        assert response_json["data"]["loginUser"] == {
+            "__typename": "Error",
+            "message": "Login failed",
         }
-    }
-    """
-    response = client.post("/graphql", json={"query": query})
 
-    assert response.status_code == 200
-    response_json = response.json()
-    assert response_json["data"]["loginUser"] == {
-        "__typename": "Error",
-        "message": "Login failed",
-    }
+    def test_successful(self, mocked_user_service, client):
+        jwt = "jwt"
+        mocked_user_service.get_user_jwt.return_value = jwt
 
+        response = client.post("/graphql", json={"query": self.get_query()})
 
-def test_login_user_existing_user_invalid_password(client, user):
-    query = f"""
-    mutation {{
-        loginUser(
-            input:{{
-                email: "{user.email}"
-                password: "invalid_password"
-            }}
-        ) {{
-            __typename
-            ... on JWT{{
-                jwt
-            }}
-            ... on Error{{
-                message
-            }}
-        }}
-    }}
-    """
-    response = client.post("/graphql", json={"query": query})
-
-    assert response.status_code == 200
-    response_json = response.json()
-    assert response_json["data"]["loginUser"] == {
-        "__typename": "Error",
-        "message": "Login failed",
-    }
-
-
-def test_login_user_existing_user_successful(client, user):
-    query = f"""
-    mutation {{
-        loginUser(
-            input:{{
-                email: "{user.email}"
-                password: "password"
-            }}
-        ) {{
-            __typename
-            ... on JWT{{
-                jwt
-            }}
-            ... on Error{{
-                message
-            }}
-        }}
-    }}
-    """
-    response = client.post("/graphql", json={"query": query})
-
-    assert response.status_code == 200
-    response_json = response.json()
-    payload = response_json["data"]["loginUser"]
-    assert payload == {
-        "__typename": "JWT",
-        "jwt": ANY,
-    }
-    assert get_user_id_from_token(payload["jwt"]) == user.id
+        assert response.status_code == 200
+        response_json = response.json()
+        assert response_json["data"]["loginUser"] == {
+            "__typename": "JWT",
+            "jwt": jwt,
+        }

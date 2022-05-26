@@ -4,7 +4,7 @@ from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from app import models
-from tests.factories.users import UserFactory
+from tests.test_domain.test_repositories.factories.users import UserFactory
 
 
 class TrainingFactory(SQLAlchemyModelFactory):

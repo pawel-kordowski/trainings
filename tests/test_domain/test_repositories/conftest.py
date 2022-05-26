@@ -1,11 +1,9 @@
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app import config, models
-from app.api import app
-from tests.factories import UserFactory, TrainingFactory
+from tests.test_domain.test_repositories.factories import UserFactory, TrainingFactory
 
 
 @pytest.fixture(scope="session")
@@ -47,9 +45,3 @@ def user(db_session):
 @pytest.fixture
 def training(db_session, user):
     return TrainingFactory(user=user)
-
-
-@pytest.fixture(scope="session")
-def client():
-    with TestClient(app) as c:
-        yield c
