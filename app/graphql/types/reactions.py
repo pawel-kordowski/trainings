@@ -22,7 +22,7 @@ class Reaction:
         return await get_users_by_ids_loader.load(self.user_id)
 
     @classmethod
-    def from_entity(cls, reaction: entities.Reaction):
+    def from_entity(cls, reaction: entities.Reaction) -> "Reaction":
         return cls(
             id=reaction.id,
             reaction_type=ReactionTypeEnum(reaction.reaction_type),

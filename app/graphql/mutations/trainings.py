@@ -14,12 +14,7 @@ async def create_training(info: Info, input: TrainingInput) -> Training:
         start_time=input.start_time,
         end_time=input.end_time,
     )
-    return Training(
-        id=training.id,
-        name=training.name,
-        start_time=training.start_time,
-        end_time=training.end_time,
-    )
+    return Training.from_entity(training)
 
 
 @strawberry.type

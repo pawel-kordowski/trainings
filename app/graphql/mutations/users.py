@@ -17,7 +17,7 @@ async def create_user(input: UserInput) -> User | Error:
         user = await UserService.create_user(email=input.email, password=input.password)
     except EmailAlreadyExists:
         return Error(message="Email address already taken")
-    return User(id=user.id, email=user.email)
+    return User.from_entity(user)
 
 
 async def login_user(input: UserInput) -> JWT | Error:
