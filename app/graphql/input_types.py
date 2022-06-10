@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 import strawberry
 
@@ -27,3 +28,8 @@ class UserInput:
     def validate(self):
         self.validate_email()
         self.validate_password()
+
+
+@strawberry.input
+class FriendshipRequestInput:
+    user_id: UUID

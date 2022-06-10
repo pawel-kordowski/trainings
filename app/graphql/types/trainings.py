@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from uuid import UUID
 
@@ -31,7 +33,7 @@ class Training:
         return await get_reactions_by_training_ids_loader.load(self.id)
 
     @classmethod
-    def from_entity(cls, training: entities.Training) -> "Training":
+    def from_entity(cls, training: entities.Training) -> Training:
         return cls(
             id=training.id,
             start_time=training.start_time,
