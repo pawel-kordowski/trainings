@@ -1,8 +1,8 @@
 """create_friendship_request_table
 
-Revision ID: 77cec32dfd76
+Revision ID: e3c4fd9a8e11
 Revises: 47c6073d103f
-Create Date: 2022-06-10 15:04:54.347135
+Create Date: 2022-06-10 17:56:15.606103
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "77cec32dfd76"
+revision = "e3c4fd9a8e11"
 down_revision = "47c6073d103f"
 branch_labels = None
 depends_on = None
@@ -26,16 +26,15 @@ def upgrade():
         sa.Column(
             "status",
             sa.Enum(
-                "pending", "accepted", "rejected", name="friendshiprequeststatusenum"
+                "pending",
+                "accepted",
+                "rejected",
+                "cancelled",
+                name="friendshiprequeststatusenum",
             ),
             nullable=False,
         ),
-        sa.Column(
-            "timestamp",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=True,
-        ),
+        sa.Column("timestamp", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(
             ["receiver_id"],
             ["user.id"],
