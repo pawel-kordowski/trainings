@@ -8,3 +8,7 @@ class ReceiverDoesNotExist(Exception):
 
 class FriendshipRequestAlreadyCreated(Exception):
     message = "Friendship request already created"
+
+
+class UsersAreAlreadyFriends(Exception):
+    message = "Users are already friends"

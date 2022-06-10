@@ -4,6 +4,7 @@ from strawberry.types import Info
 from app.domain.services.exceptions import (
     FriendshipRequestAlreadyCreated,
     ReceiverDoesNotExist,
+    UsersAreAlreadyFriends,
 )
 from app.domain.services.friendship_request_service import FriendshipRequestService
 from app.graphql.input_types import FriendshipRequestInput
@@ -19,7 +20,11 @@ async def send_friendship_request(
         friendship_request = await FriendshipRequestService.create_friendship_request(
             sender_id=info.context["user_id"], receiver_id=input.user_id
         )
-    except (ReceiverDoesNotExist, FriendshipRequestAlreadyCreated) as e:
+    except (
+        ReceiverDoesNotExist,
+        FriendshipRequestAlreadyCreated,
+        UsersAreAlreadyFriends,
+    ) as e:
         return Error(message=e.message)
     return FriendshipRequest.from_entity(friendship_request)
 
