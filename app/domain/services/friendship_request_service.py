@@ -63,3 +63,9 @@ class FriendshipRequestService:
             return await friendship_request_repository.get_pending_requests_received_by_user(  # noqa
                 user_id=user_id
             )
+
+    @classmethod
+    async def accept_friendship_request(
+        cls, user_id: UUID, friendship_request_id: UUID
+    ):
+        pass
