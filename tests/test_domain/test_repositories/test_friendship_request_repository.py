@@ -158,3 +158,55 @@ async def test_get_pending_requests_sent_by_user(db_session):
 async def test_get_pending_requests_sent_by_user_no_results():
     async with FriendshipRequestRepository() as repository:
         assert await repository.get_pending_requests_sent_by_user(user_id=uuid4()) == []
+
+
+async def test_get_pending_requests_received_by_user(db_session):
+    receiver = UserFactory()
+    now = helpers.get_utc_now()
+    friendship_request_1 = FriendshipRequestFactory(
+        receiver=receiver,
+        timestamp=now,
+        status=enums.FriendshipRequestStatusEnum.pending,
+    )
+    friendship_request_2 = FriendshipRequestFactory(
+        receiver=receiver,
+        timestamp=now + timedelta(minutes=1),
+        status=enums.FriendshipRequestStatusEnum.pending,
+    )
+    friendship_request_3 = FriendshipRequestFactory(
+        receiver=receiver,
+        timestamp=now - timedelta(minutes=1),
+        status=enums.FriendshipRequestStatusEnum.pending,
+    )
+    FriendshipRequestFactory(
+        receiver=receiver, status=enums.FriendshipRequestStatusEnum.accepted
+    )
+    FriendshipRequestFactory(
+        receiver=receiver, status=enums.FriendshipRequestStatusEnum.cancelled
+    )
+    FriendshipRequestFactory(
+        receiver=receiver, status=enums.FriendshipRequestStatusEnum.rejected
+    )
+    FriendshipRequestFactory(
+        sender=receiver, status=enums.FriendshipRequestStatusEnum.pending
+    )
+
+    async with FriendshipRequestRepository() as repository:
+        assert await repository.get_pending_requests_received_by_user(
+            user_id=receiver.id
+        ) == [
+            entities.FriendshipRequest.from_model(friendship_request)
+            for friendship_request in [
+                friendship_request_3,
+                friendship_request_1,
+                friendship_request_2,
+            ]
+        ]
+
+
+async def test_get_pending_requests_received_by_user_no_results():
+    async with FriendshipRequestRepository() as repository:
+        assert (
+            await repository.get_pending_requests_received_by_user(user_id=uuid4())
+            == []
+        )
