@@ -48,4 +48,9 @@ class FriendshipRequestService:
     async def get_pending_requests_sent_by_user(
         cls, user_id: UUID
     ) -> list[entities.FriendshipRequest]:
-        pass
+        async with FriendshipRequestRepository() as friendship_request_repository:
+            return (
+                await friendship_request_repository.get_pending_requests_sent_by_user(
+                    user_id=user_id
+                )
+            )

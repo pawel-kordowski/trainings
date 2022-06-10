@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from app import enums, helpers
 from app.domain.entities import FriendshipRequest
 from app.domain.services.exceptions import (
     ReceiverDoesNotExist,
@@ -163,3 +164,42 @@ class TestCreateFriendshipRequest:
         mocked_friendship_request_repository_instance.create_pending_request.assert_awaited_once_with(  # noqa
             sender_id=sender_id, receiver_id=receiver_id
         )
+
+
+@patch(
+    "app.domain.services.friendship_request_service.FriendshipRequestRepository",
+    autospec=True,
+)
+async def test_get_pending_requests_sent_by_user(mocked_friendship_request_repository):
+    user_id = uuid4()
+    friendship_request_1 = FriendshipRequest(
+        id=uuid4(),
+        sender_id=user_id,
+        receiver_id=uuid4(),
+        status=enums.FriendshipRequestStatusEnum.pending,
+        timestamp=helpers.get_utc_now(),
+    )
+    friendship_request_2 = FriendshipRequest(
+        id=uuid4(),
+        sender_id=user_id,
+        receiver_id=uuid4(),
+        status=enums.FriendshipRequestStatusEnum.pending,
+        timestamp=helpers.get_utc_now(),
+    )
+    friendship_requests = [friendship_request_1, friendship_request_2]
+    mocked_friendship_request_repository_instance = (
+        mocked_friendship_request_repository.return_value.__aenter__.return_value
+    )
+    mocked_friendship_request_repository_instance.get_pending_requests_sent_by_user.return_value = (  # noqa
+        friendship_requests
+    )
+
+    assert (
+        await FriendshipRequestService.get_pending_requests_sent_by_user(
+            user_id=user_id
+        )
+        == friendship_requests
+    )
+    mocked_friendship_request_repository_instance.get_pending_requests_sent_by_user.assert_awaited_once_with(  # noqa
+        user_id=user_id
+    )

@@ -41,3 +41,8 @@ class FriendshipRequestRepository(PostgresRepository):
         self.session.add(friendship_request)
         await self.session.commit()
         return entities.FriendshipRequest.from_model(friendship_request)
+
+    async def get_pending_requests_sent_by_user(
+        self, user_id: UUID
+    ) -> list[entities.FriendshipRequest]:
+        pass
