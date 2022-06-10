@@ -45,4 +45,19 @@ class FriendshipRequestRepository(PostgresRepository):
     async def get_pending_requests_sent_by_user(
         self, user_id: UUID
     ) -> list[entities.FriendshipRequest]:
-        pass
+        sql = (
+            select(models.FriendshipRequest)
+            .where(
+                models.FriendshipRequest.sender_id == user_id,
+                models.FriendshipRequest.status
+                == enums.FriendshipRequestStatusEnum.pending,
+            )
+            .order_by(models.FriendshipRequest.timestamp)
+        )
+
+        friendship_requests = (await self.session.execute(sql)).scalars()
+
+        return [
+            entities.FriendshipRequest.from_model(friendship_request)
+            for friendship_request in friendship_requests
+        ]
