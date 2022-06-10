@@ -31,6 +31,9 @@ class UserRepository(PostgresRepository):
             result = results[0]
             return entities.UserWithHashedPassword.from_model(result)
 
+    async def does_user_with_id_exist(self, user_id: UUID) -> bool:
+        pass
+
     async def get_users_by_ids(self, user_ids: list[UUID]) -> list[entities.User]:
         sql = select(models.User).where(models.User.id.in_(user_ids))
 

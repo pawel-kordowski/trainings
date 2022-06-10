@@ -5,7 +5,7 @@ from app.domain.services.exceptions import (
     FriendshipRequestAlreadyCreated,
     ReceiverDoesNotExist,
 )
-from app.domain.services.friendship_request_serivce import FriendshipRequestService
+from app.domain.services.friendship_request_service import FriendshipRequestService
 from app.graphql.input_types import FriendshipRequestInput
 from app.graphql.permissions import IsAuthenticated
 from app.graphql.types import Error
