@@ -42,17 +42,35 @@ class FriendshipRequestRepository(PostgresRepository):
         await self.session.commit()
         return entities.FriendshipRequest.from_model(friendship_request)
 
-    async def get_pending_requests_sent_by_user(
-        self, user_id: UUID
-    ) -> list[entities.FriendshipRequest]:
-        sql = (
+    def _get_pending_requests_query(self):
+        return (
             select(models.FriendshipRequest)
             .where(
-                models.FriendshipRequest.sender_id == user_id,
                 models.FriendshipRequest.status
                 == enums.FriendshipRequestStatusEnum.pending,
             )
             .order_by(models.FriendshipRequest.timestamp)
+        )
+
+    async def get_pending_requests_received_by_user(
+        self, user_id: UUID
+    ) -> list[entities.FriendshipRequest]:
+        sql = self._get_pending_requests_query().where(
+            models.FriendshipRequest.receiver_id == user_id
+        )
+
+        friendship_requests = (await self.session.execute(sql)).scalars()
+
+        return [
+            entities.FriendshipRequest.from_model(friendship_request)
+            for friendship_request in friendship_requests
+        ]
+
+    async def get_pending_requests_sent_by_user(
+        self, user_id: UUID
+    ) -> list[entities.FriendshipRequest]:
+        sql = self._get_pending_requests_query().where(
+            models.FriendshipRequest.sender_id == user_id
         )
 
         friendship_requests = (await self.session.execute(sql)).scalars()
