@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from sqlalchemy import select
 
@@ -70,4 +72,18 @@ async def test_get_user_by_email_existing(user):
             ) == entities.UserWithHashedPassword(
                 id=user.id, email=user.email, hashed_password=user.hashed_password
             )
+        assert query_counter.count == 1
+
+
+async def test_does_user_with_id_exist_not_existing():
+    async with UserRepository() as repository:
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.does_user_with_id_exist(user_id=uuid4()) is False
+        assert query_counter.count == 1
+
+
+async def test_does_user_with_id_exist_existing(user):
+    async with UserRepository() as repository:
+        with QueryCounter(engine.sync_engine) as query_counter:
+            assert await repository.does_user_with_id_exist(user_id=user.id) is True
         assert query_counter.count == 1

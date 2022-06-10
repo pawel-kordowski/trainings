@@ -71,3 +71,13 @@ class FriendshipRequest:
     receiver_id: UUID
     timestamp: datetime
     status: FriendshipRequestStatusEnum
+
+    @classmethod
+    def from_model(cls, model_instance: models.FriendshipRequest):
+        return cls(
+            id=model_instance.id,
+            sender_id=model_instance.sender_id,
+            receiver_id=model_instance.receiver_id,
+            timestamp=model_instance.timestamp,
+            status=model_instance.status,
+        )

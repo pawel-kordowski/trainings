@@ -2,9 +2,10 @@ from uuid import uuid4
 
 from sqlalchemy import Column, DateTime, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import functions
+from sqlalchemy.orm import relationship
 
 from app.enums import FriendshipRequestStatusEnum
+from app.helpers import get_utc_now
 from app.models.base import Base
 
 
@@ -19,4 +20,7 @@ class FriendshipRequest(Base):
         default=FriendshipRequestStatusEnum.pending,
         nullable=False,
     )
-    timestamp = Column(DateTime(timezone=True), server_default=functions.now())
+    timestamp = Column(DateTime(timezone=True), default=get_utc_now)
+
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])

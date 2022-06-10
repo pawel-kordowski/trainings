@@ -22,7 +22,10 @@ class TestCreateFriendshipRequest:
     async def test_raises_exception_when_receiver_does_not_exist(
         self, mocked_friendship_request_repository, mocked_user_repository
     ):
-        mocked_user_repository.does_user_with_id_exist.return_value = False
+        mocked_user_repository_instance = (
+            mocked_user_repository.return_value.__aenter__.return_value
+        )
+        mocked_user_repository_instance.does_user_with_id_exist.return_value = False
         receiver_id = uuid4()
 
         with pytest.raises(ReceiverDoesNotExist):
@@ -30,15 +33,21 @@ class TestCreateFriendshipRequest:
                 sender_id=uuid4(), receiver_id=receiver_id
             )
 
-        mocked_user_repository.does_user_with_id_exist.assert_awaited_once_with(
+        mocked_user_repository_instance.does_user_with_id_exist.assert_awaited_once_with( # noqa
             user_id=receiver_id
         )
 
     async def test_raises_exception_when_pending_request_already_exist(
         self, mocked_friendship_request_repository, mocked_user_repository
     ):
-        mocked_user_repository.does_user_with_id_exist.return_value = True
-        mocked_friendship_request_repository.does_pending_request_exists.return_value = (  # noqa
+        mocked_user_repository_instance = (
+            mocked_user_repository.return_value.__aenter__.return_value
+        )
+        mocked_friendship_request_repository_instance = (
+            mocked_friendship_request_repository.return_value.__aenter__.return_value
+        )
+        mocked_user_repository_instance.does_user_with_id_exist.return_value = True
+        mocked_friendship_request_repository_instance.does_pending_request_exists.return_value = (  # noqa
             True
         )
         receiver_id = uuid4()
@@ -49,18 +58,24 @@ class TestCreateFriendshipRequest:
                 sender_id=sender_id, receiver_id=receiver_id
             )
 
-        mocked_user_repository.does_user_with_id_exist.assert_awaited_once_with(
+        mocked_user_repository_instance.does_user_with_id_exist.assert_awaited_once_with(  # noqa
             user_id=receiver_id
         )
-        mocked_friendship_request_repository.does_pending_request_exists.assert_awaited_once_with(  # noqa
+        mocked_friendship_request_repository_instance.does_pending_request_exists.assert_awaited_once_with(  # noqa
             sender_id=sender_id, receiver_id=receiver_id
         )
 
     async def test_successful(
         self, mocked_friendship_request_repository, mocked_user_repository
     ):
-        mocked_user_repository.does_user_with_id_exist.return_value = True
-        mocked_friendship_request_repository.does_pending_request_exists.return_value = (  # noqa
+        mocked_user_repository_instance = (
+            mocked_user_repository.return_value.__aenter__.return_value
+        )
+        mocked_friendship_request_repository_instance = (
+            mocked_friendship_request_repository.return_value.__aenter__.return_value
+        )
+        mocked_user_repository_instance.does_user_with_id_exist.return_value = True
+        mocked_friendship_request_repository_instance.does_pending_request_exists.return_value = (  # noqa
             False
         )
         friendship_request = FriendshipRequest(
@@ -70,7 +85,7 @@ class TestCreateFriendshipRequest:
             status=FriendshipRequestStatusEnum.pending,
             timestamp=datetime.utcnow(),
         )
-        mocked_friendship_request_repository.create_pending_request.return_value = (
+        mocked_friendship_request_repository_instance.create_pending_request.return_value = (  # noqa
             friendship_request
         )
         receiver_id = uuid4()
@@ -83,12 +98,12 @@ class TestCreateFriendshipRequest:
             == friendship_request
         )
 
-        mocked_user_repository.does_user_with_id_exist.assert_awaited_once_with(
+        mocked_user_repository_instance.does_user_with_id_exist.assert_awaited_once_with(  # noqa
             user_id=receiver_id
         )
-        mocked_friendship_request_repository.does_pending_request_exists.assert_awaited_once_with(  # noqa
+        mocked_friendship_request_repository_instance.does_pending_request_exists.assert_awaited_once_with(  # noqa
             sender_id=sender_id, receiver_id=receiver_id
         )
-        mocked_friendship_request_repository.create_pending_request.assert_awaited_once_with(  # noqa
+        mocked_friendship_request_repository_instance.create_pending_request.assert_awaited_once_with(  # noqa
             sender_id=sender_id, receiver_id=receiver_id
         )

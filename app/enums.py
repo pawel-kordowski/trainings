@@ -16,3 +16,4 @@ class FriendshipRequestStatusEnum(enum.Enum):
     pending = "pending"
     accepted = "accepted"
     rejected = "rejected"
+    cancelled = "cancelled"

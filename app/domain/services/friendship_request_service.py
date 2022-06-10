@@ -16,12 +16,14 @@ class FriendshipRequestService:
     async def create_friendship_request(
         sender_id: UUID, receiver_id: UUID
     ) -> entities.FriendshipRequest:
-        if not await UserRepository.does_user_with_id_exist(user_id=receiver_id):
-            raise ReceiverDoesNotExist
-        if await FriendshipRequestRepository.does_pending_request_exists(
-            sender_id=sender_id, receiver_id=receiver_id
-        ):
-            raise FriendshipRequestAlreadyCreated
-        return await FriendshipRequestRepository.create_pending_request(
-            sender_id=sender_id, receiver_id=receiver_id
-        )
+        async with UserRepository() as user_repository:
+            if not await user_repository.does_user_with_id_exist(user_id=receiver_id):
+                raise ReceiverDoesNotExist
+        async with FriendshipRequestRepository() as friendship_request_repository:
+            if await friendship_request_repository.does_pending_request_exists(
+                sender_id=sender_id, receiver_id=receiver_id
+            ):
+                raise FriendshipRequestAlreadyCreated
+            return await friendship_request_repository.create_pending_request(
+                sender_id=sender_id, receiver_id=receiver_id
+            )
