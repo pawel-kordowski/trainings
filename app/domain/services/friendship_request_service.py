@@ -43,3 +43,9 @@ class FriendshipRequestService:
             return await friendship_request_repository.create_pending_request(
                 sender_id=sender_id, receiver_id=receiver_id
             )
+
+    @classmethod
+    async def get_pending_requests_sent_by_user(
+        cls, user_id: UUID
+    ) -> list[entities.FriendshipRequest]:
+        pass
