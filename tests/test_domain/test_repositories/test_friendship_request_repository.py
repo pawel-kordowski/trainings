@@ -1,7 +1,11 @@
+from datetime import timedelta
+from uuid import uuid4
+
 from freezegun import freeze_time
 from sqlalchemy import select
 
-from app import enums, models
+from app import enums, models, helpers
+from app.domain import entities
 from app.domain.repositories.friendship_request_repository import (
     FriendshipRequestRepository,
 )
@@ -107,3 +111,50 @@ async def test_create_pending_request(db_session):
         == get_utc_now()
         == friendship_request_from_db.timestamp
     )
+
+
+async def test_get_pending_requests_sent_by_user(db_session):
+    sender = UserFactory()
+    now = helpers.get_utc_now()
+    friendship_request_1 = FriendshipRequestFactory(
+        sender=sender, timestamp=now, status=enums.FriendshipRequestStatusEnum.pending
+    )
+    friendship_request_2 = FriendshipRequestFactory(
+        sender=sender,
+        timestamp=now + timedelta(minutes=1),
+        status=enums.FriendshipRequestStatusEnum.pending,
+    )
+    friendship_request_3 = FriendshipRequestFactory(
+        sender=sender,
+        timestamp=now - timedelta(minutes=1),
+        status=enums.FriendshipRequestStatusEnum.pending,
+    )
+    FriendshipRequestFactory(
+        sender=sender, status=enums.FriendshipRequestStatusEnum.accepted
+    )
+    FriendshipRequestFactory(
+        sender=sender, status=enums.FriendshipRequestStatusEnum.cancelled
+    )
+    FriendshipRequestFactory(
+        sender=sender, status=enums.FriendshipRequestStatusEnum.rejected
+    )
+    FriendshipRequestFactory(
+        receiver=sender, status=enums.FriendshipRequestStatusEnum.pending
+    )
+
+    async with FriendshipRequestRepository() as repository:
+        assert await repository.get_pending_requests_sent_by_user(
+            user_id=sender.id
+        ) == [
+            entities.FriendshipRequest.from_model(friendship_request)
+            for friendship_request in [
+                friendship_request_3,
+                friendship_request_1,
+                friendship_request_2,
+            ]
+        ]
+
+
+async def test_get_pending_requests_sent_by_user_no_results():
+    async with FriendshipRequestRepository() as repository:
+        assert await repository.get_pending_requests_sent_by_user(user_id=uuid4()) == []
