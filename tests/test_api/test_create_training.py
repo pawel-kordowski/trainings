@@ -16,7 +16,7 @@ class TestCreateTraining:
         return f"""
         mutation {{
             createTraining(
-                input:{{
+                input: {{
                     name: "{self.name}"
                     startTime: "{self.start_time.isoformat()}"
                     endTime: "{self.end_time.isoformat()}"

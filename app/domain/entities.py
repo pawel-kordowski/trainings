@@ -4,7 +4,7 @@ from typing import Optional
 from uuid import UUID
 
 from app import models
-from app.enums import ReactionTypeEnum
+from app.enums import FriendshipRequestStatusEnum, ReactionTypeEnum
 
 
 @dataclass
@@ -61,4 +61,23 @@ class UserWithHashedPassword(User):
             id=model_instance.id,
             email=model_instance.email,
             hashed_password=model_instance.hashed_password,
+        )
+
+
+@dataclass
+class FriendshipRequest:
+    id: UUID
+    sender_id: UUID
+    receiver_id: UUID
+    timestamp: datetime
+    status: FriendshipRequestStatusEnum
+
+    @classmethod
+    def from_model(cls, model_instance: models.FriendshipRequest):
+        return cls(
+            id=model_instance.id,
+            sender_id=model_instance.sender_id,
+            receiver_id=model_instance.receiver_id,
+            timestamp=model_instance.timestamp,
+            status=model_instance.status,
         )

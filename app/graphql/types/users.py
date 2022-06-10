@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 import strawberry
@@ -11,7 +13,7 @@ class User:
     email: str
 
     @classmethod
-    def from_entity(cls, user: entities.User) -> "User":
+    def from_entity(cls, user: entities.User) -> User:
         return cls(id=user.id, email=user.email)
 
 

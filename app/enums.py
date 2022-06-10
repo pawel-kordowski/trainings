@@ -10,3 +10,10 @@ class TrainingVisibilityEnum(enum.Enum):
     public = "public"
     private = "private"
     only_friends = "only_friends"
+
+
+class FriendshipRequestStatusEnum(enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    rejected = "rejected"
+    cancelled = "cancelled"
