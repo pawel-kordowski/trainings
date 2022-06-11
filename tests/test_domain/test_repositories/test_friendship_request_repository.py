@@ -1,6 +1,7 @@
 from datetime import timedelta
 from uuid import uuid4
 
+import pytest
 from freezegun import freeze_time
 from sqlalchemy import select
 
@@ -210,3 +211,26 @@ async def test_get_pending_requests_received_by_user_no_results():
             await repository.get_pending_requests_received_by_user(user_id=uuid4())
             == []
         )
+
+
+@pytest.mark.parametrize(
+    "status",
+    (
+        enums.FriendshipRequestStatusEnum.accepted,
+        enums.FriendshipRequestStatusEnum.rejected,
+        enums.FriendshipRequestStatusEnum.cancelled,
+        enums.FriendshipRequestStatusEnum.pending,
+    ),
+)
+async def test_update_status(status, db_session):
+    friendship_request = FriendshipRequestFactory(
+        status=enums.FriendshipRequestStatusEnum.pending
+    )
+
+    async with FriendshipRequestRepository() as repository:
+        await repository.update_status(
+            friendship_request_id=friendship_request.id, status=status
+        )
+
+    db_session.refresh(friendship_request)
+    assert friendship_request.status == status

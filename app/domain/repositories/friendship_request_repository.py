@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, update
 
 from app import enums, models
 from app.domain import entities
@@ -11,7 +11,14 @@ class FriendshipRequestRepository(PostgresRepository):
     async def update_status(
         self, friendship_request_id: UUID, status: enums.FriendshipRequestStatusEnum
     ):
-        pass
+        sql = (
+            update(models.FriendshipRequest)
+            .where(models.FriendshipRequest.id == friendship_request_id)
+            .values(status=status)
+        )
+
+        await self.session.execute(sql)
+        await self.session.commit()
 
     async def get_request_by_id(
         self, friendship_request_id: UUID

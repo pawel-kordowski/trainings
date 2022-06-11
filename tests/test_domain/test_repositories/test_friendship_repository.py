@@ -1,8 +1,11 @@
 from uuid import uuid4
 
+from sqlalchemy import select
+
+from app import models
 from app.database import engine
 from app.domain.repositories.friendship_repository import FriendshipRepository
-from tests.test_domain.test_repositories.factories import FriendshipFactory
+from tests.test_domain.test_repositories.factories import FriendshipFactory, UserFactory
 from tests.test_domain.test_repositories.sqlalchemy_helpers import QueryCounter
 
 
@@ -61,3 +64,17 @@ async def test_are_users_friends_returns_false_when_users_are_not_friends(db_ses
             )
             is False
         )
+
+
+async def test_create_friendship(db_session):
+    user_1, user_2 = UserFactory.create_batch(size=2)
+
+    async with FriendshipRepository() as repository:
+        await repository.create_friendship(user_1_id=user_1.id, user_2_id=user_2.id)
+
+    sql = select(models.Friendship)
+    friendships_from_db = db_session.execute(sql).scalars().all()
+    assert len(friendships_from_db) == 1
+    friendship_from_db = friendships_from_db[0]
+    assert friendship_from_db.user_1_id == user_1.id
+    assert friendship_from_db.user_2_id == user_2.id
