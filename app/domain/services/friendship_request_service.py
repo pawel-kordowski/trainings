@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from app import enums
 from app.domain import entities
 from app.domain.repositories.friendship_repository import FriendshipRepository
 from app.domain.repositories.friendship_request_repository import (
@@ -8,6 +9,7 @@ from app.domain.repositories.friendship_request_repository import (
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.services.exceptions import (
     FriendshipRequestAlreadyCreated,
+    PendingFriendshipRequestForUserDoesNotExist,
     ReceiverDoesNotExist,
     UsersAreAlreadyFriends,
 )
@@ -33,12 +35,12 @@ class FriendshipRequestService:
             )
             if are_users_friends:
                 raise UsersAreAlreadyFriends
-            does_pending_request_exists = (
-                await friendship_request_repository.does_pending_request_exists(
+            does_pending_request_exist = (
+                await friendship_request_repository.does_pending_request_exist(
                     user_1_id=sender_id, user_2_id=receiver_id
                 )
             )
-            if does_pending_request_exists:
+            if does_pending_request_exist:
                 raise FriendshipRequestAlreadyCreated
             return await friendship_request_repository.create_pending_request(
                 sender_id=sender_id, receiver_id=receiver_id
@@ -68,4 +70,29 @@ class FriendshipRequestService:
     async def accept_friendship_request(
         cls, user_id: UUID, friendship_request_id: UUID
     ):
-        pass
+        async with (
+            FriendshipRequestRepository() as friendship_request_repository,
+            FriendshipRepository() as friendship_repository,
+        ):
+            friendship_request = await friendship_request_repository.get_request_by_id(
+                friendship_request_id=friendship_request_id
+            )
+            if (
+                not friendship_request
+                or friendship_request.status
+                != enums.FriendshipRequestStatusEnum.pending
+                or friendship_request.receiver_id != user_id
+            ):
+                raise PendingFriendshipRequestForUserDoesNotExist
+            await friendship_request_repository.update_status(
+                friendship_request_id=friendship_request_id,
+                status=enums.FriendshipRequestStatusEnum.accepted,
+            )
+            await friendship_repository.create_friendship(
+                user_1_id=friendship_request.sender_id,
+                user_2_id=friendship_request.receiver_id,
+            )
+            await friendship_repository.create_friendship(
+                user_1_id=friendship_request.receiver_id,
+                user_2_id=friendship_request.sender_id,
+            )

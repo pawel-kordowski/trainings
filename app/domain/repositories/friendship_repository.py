@@ -29,3 +29,6 @@ class FriendshipRepository(PostgresRepository):
         results = (await self.session.execute(sql)).all()
 
         return bool(results)
+
+    async def create_friendship(self, user_1_id: UUID, user_2_id: UUID):
+        pass

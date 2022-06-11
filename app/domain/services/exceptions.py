@@ -5,8 +5,9 @@ class LoginFailed(Exception):
 class AppError(Exception):
     message = None
 
-    def __init__(self, message):
-        self.message = message
+    def __init__(self, message=None):
+        if message:
+            self.message = message
 
 
 class ReceiverDoesNotExist(AppError):
@@ -19,3 +20,7 @@ class FriendshipRequestAlreadyCreated(AppError):
 
 class UsersAreAlreadyFriends(AppError):
     message = "Users are already friends"
+
+
+class PendingFriendshipRequestForUserDoesNotExist(AppError):
+    message = "Pending request for user does not exist"

@@ -8,12 +8,27 @@ from app.domain.repositories.base import PostgresRepository
 
 
 class FriendshipRequestRepository(PostgresRepository):
-    async def does_pending_request_exists(
+    async def update_status(
+        self, friendship_request_id: UUID, status: enums.FriendshipRequestStatusEnum
+    ):
+        pass
+
+    async def get_request_by_id(
+        self, friendship_request_id: UUID
+    ) -> entities.FriendshipRequest | None:
+        sql = select(models.FriendshipRequest).where(
+            models.FriendshipRequest.id == friendship_request_id
+        )
+
+        results = (await self.session.execute(sql)).scalar()
+
+        if results:
+            return entities.FriendshipRequest.from_model(results[0])
+
+    async def does_pending_request_exist(
         self, user_1_id: UUID, user_2_id: UUID
     ) -> bool:
-        sql = select(models.FriendshipRequest).where(
-            models.FriendshipRequest.status
-            == enums.FriendshipRequestStatusEnum.pending,
+        sql = self._get_pending_requests_query().where(
             or_(
                 and_(
                     models.FriendshipRequest.sender_id == user_1_id,
