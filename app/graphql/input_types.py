@@ -33,3 +33,8 @@ class UserInput:
 @strawberry.input
 class FriendshipRequestInput:
     user_id: UUID
+
+
+@strawberry.input
+class FriendshipRequestIDInput:
+    friendship_request_id: UUID
