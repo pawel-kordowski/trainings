@@ -22,5 +22,5 @@ class UsersAreAlreadyFriends(AppError):
     message = "Users are already friends"
 
 
-class PendingFriendshipRequestForUserDoesNotExist(AppError):
-    message = "Pending request for user does not exist"
+class PendingFriendshipRequestDoesNotExist(AppError):
+    message = "Pending request does not exist"

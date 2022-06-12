@@ -47,6 +47,19 @@ async def reject_friendship_request(
     return OK()
 
 
+async def cancel_friendship_request(
+    info: Info, input: FriendshipRequestIDInput
+) -> OK | Error:
+    try:
+        await FriendshipRequestService.cancel_friendship_request(
+            user_id=info.context["user_id"],
+            friendship_request_id=input.friendship_request_id,
+        )
+    except AppError as e:
+        return Error(message=e.message)
+    return OK()
+
+
 @strawberry.type
 class FriendshipRequestMutation:
     send_friendship_request: FriendshipRequest | Error = strawberry.mutation(
@@ -57,4 +70,7 @@ class FriendshipRequestMutation:
     )
     reject_friendship_request: OK | Error = strawberry.mutation(
         resolver=reject_friendship_request, permission_classes=[IsAuthenticated]
+    )
+    cancel_friendship_request: OK | Error = strawberry.mutation(
+        resolver=cancel_friendship_request, permission_classes=[IsAuthenticated]
     )

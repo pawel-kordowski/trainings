@@ -3,11 +3,7 @@ from unittest.mock import patch
 from uuid import uuid4, UUID
 
 from app.domain.entities import FriendshipRequest, User
-from app.domain.services.exceptions import (
-    ReceiverDoesNotExist,
-    FriendshipRequestAlreadyCreated,
-    UsersAreAlreadyFriends,
-)
+from app.domain.services.exceptions import AppError
 from app.enums import FriendshipRequestStatusEnum
 from app.jwt_tokens import create_access_token
 
@@ -16,7 +12,8 @@ from app.jwt_tokens import create_access_token
     "app.graphql.mutations.friendship_requests.FriendshipRequestService", autospec=True
 )
 class TestSendFriendshipRequest:
-    def get_query(self, user_id: UUID):
+    @staticmethod
+    def get_query(user_id: UUID):
         return f"""
         mutation {{
             sendFriendshipRequest(
@@ -100,11 +97,12 @@ class TestSendFriendshipRequest:
         assert response_json["data"] is None
         assert response_json["errors"][0]["message"] == "User is not authenticated"
 
-    def test_returns_error_when_receiver_does_not_exist(
+    def test_returns_error_when_exception_occur(
         self, mocked_friendship_request_service, client
     ):
+        error_message = "Error message"
         mocked_friendship_request_service.create_friendship_request.side_effect = (
-            ReceiverDoesNotExist
+            AppError(message=error_message)
         )
 
         response = client.post(
@@ -117,45 +115,5 @@ class TestSendFriendshipRequest:
         response_json = response.json()
         assert response_json["data"]["sendFriendshipRequest"] == {
             "__typename": "Error",
-            "message": "Receiver does not exist",
-        }
-
-    def test_returns_error_when_request_already_sent(
-        self, mocked_friendship_request_service, client
-    ):
-        mocked_friendship_request_service.create_friendship_request.side_effect = (
-            FriendshipRequestAlreadyCreated
-        )
-
-        response = client.post(
-            "/graphql",
-            json={"query": self.get_query(user_id=uuid4())},
-            headers={"Authorization": f"Bearer {create_access_token(user_id=uuid4())}"},
-        )
-
-        assert response.status_code == 200
-        response_json = response.json()
-        assert response_json["data"]["sendFriendshipRequest"] == {
-            "__typename": "Error",
-            "message": "Friendship request already created",
-        }
-
-    def test_returns_error_when_users_are_already_friends(
-        self, mocked_friendship_request_service, client
-    ):
-        mocked_friendship_request_service.create_friendship_request.side_effect = (
-            UsersAreAlreadyFriends
-        )
-
-        response = client.post(
-            "/graphql",
-            json={"query": self.get_query(user_id=uuid4())},
-            headers={"Authorization": f"Bearer {create_access_token(user_id=uuid4())}"},
-        )
-
-        assert response.status_code == 200
-        response_json = response.json()
-        assert response_json["data"]["sendFriendshipRequest"] == {
-            "__typename": "Error",
-            "message": "Users are already friends",
+            "message": error_message,
         }

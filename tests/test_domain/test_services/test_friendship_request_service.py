@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import patch, call
+from unittest.mock import patch, call, Mock
 from uuid import uuid4
 
 import pytest
@@ -10,7 +10,7 @@ from app.domain.services.exceptions import (
     ReceiverDoesNotExist,
     FriendshipRequestAlreadyCreated,
     UsersAreAlreadyFriends,
-    PendingFriendshipRequestForUserDoesNotExist,
+    PendingFriendshipRequestDoesNotExist,
 )
 from app.domain.services.friendship_request_service import FriendshipRequestService
 from app.enums import FriendshipRequestStatusEnum
@@ -251,9 +251,7 @@ async def test_get_pending_requests_received_by_user(
     "app.domain.services.friendship_request_service.FriendshipRequestRepository",
     autospec=True,
 )
-class TestGetPendingRequestReceivedByUser:
-    receiver_id = uuid4()
-
+class TestGetPendingRequest:
     @pytest.mark.parametrize(
         "friendship_request",
         (
@@ -262,27 +260,20 @@ class TestGetPendingRequestReceivedByUser:
                 id=uuid4(),
                 sender_id=uuid4(),
                 receiver_id=uuid4(),
-                status=enums.FriendshipRequestStatusEnum.pending,
-                timestamp=helpers.get_utc_now(),
-            ),
-            FriendshipRequest(
-                id=uuid4(),
-                sender_id=uuid4(),
-                receiver_id=receiver_id,
                 status=enums.FriendshipRequestStatusEnum.accepted,
                 timestamp=helpers.get_utc_now(),
             ),
             FriendshipRequest(
                 id=uuid4(),
                 sender_id=uuid4(),
-                receiver_id=receiver_id,
+                receiver_id=uuid4(),
                 status=enums.FriendshipRequestStatusEnum.rejected,
                 timestamp=helpers.get_utc_now(),
             ),
             FriendshipRequest(
                 id=uuid4(),
                 sender_id=uuid4(),
-                receiver_id=receiver_id,
+                receiver_id=uuid4(),
                 status=enums.FriendshipRequestStatusEnum.cancelled,
                 timestamp=helpers.get_utc_now(),
             ),
@@ -299,10 +290,9 @@ class TestGetPendingRequestReceivedByUser:
         )
         friendship_request_id = uuid4()
 
-        with pytest.raises(PendingFriendshipRequestForUserDoesNotExist):
-            await FriendshipRequestService._get_pending_request_received_by_user(
+        with pytest.raises(PendingFriendshipRequestDoesNotExist):
+            await FriendshipRequestService._get_pending_request(
                 friendship_request_repository=mocked_friendship_request_repository_instance,  # noqa
-                user_id=self.receiver_id,
                 friendship_request_id=friendship_request_id,
             )
         mocked_friendship_request_repository_instance.get_request_by_id.assert_awaited_once_with(  # noqa
@@ -313,7 +303,7 @@ class TestGetPendingRequestReceivedByUser:
         friendship_request = FriendshipRequest(
             id=uuid4(),
             sender_id=uuid4(),
-            receiver_id=self.receiver_id,
+            receiver_id=uuid4(),
             status=enums.FriendshipRequestStatusEnum.pending,
             timestamp=helpers.get_utc_now(),
         )
@@ -325,9 +315,8 @@ class TestGetPendingRequestReceivedByUser:
         )
 
         assert (
-            await FriendshipRequestService._get_pending_request_received_by_user(
+            await FriendshipRequestService._get_pending_request(
                 friendship_request_repository=mocked_friendship_request_repository_instance,  # noqa
-                user_id=self.receiver_id,
                 friendship_request_id=friendship_request.id,
             )
             == friendship_request
@@ -338,15 +327,141 @@ class TestGetPendingRequestReceivedByUser:
 
 
 @patch(
+    "app.domain.services.friendship_request_service.FriendshipRequestService."
+    "_get_pending_request",
+    autospec=True,
+)
+class TestGetPendingRequestSentByUser:
+    sender_id = uuid4()
+    mocked_friendship_request_repository = Mock()
+    friendship_request_id = uuid4()
+
+    @pytest.mark.parametrize(
+        "get_pending_request_side_effect",
+        (
+            PendingFriendshipRequestDoesNotExist,
+            FriendshipRequest(
+                id=uuid4(),
+                sender_id=uuid4(),
+                receiver_id=uuid4(),
+                status=enums.FriendshipRequestStatusEnum.pending,
+                timestamp=helpers.get_utc_now(),
+            ),
+        ),
+    )
+    async def test_raises_exception_when_request_not_found(
+        self, mocked_get_pending_request, get_pending_request_side_effect
+    ):
+        mocked_get_pending_request.side_effect = [get_pending_request_side_effect]
+
+        with pytest.raises(PendingFriendshipRequestDoesNotExist):
+            await FriendshipRequestService._get_pending_request_sent_by_user(
+                friendship_request_repository=self.mocked_friendship_request_repository,
+                friendship_request_id=self.friendship_request_id,
+                user_id=self.sender_id,
+            )
+        mocked_get_pending_request.assert_awaited_once_with(
+            friendship_request_repository=self.mocked_friendship_request_repository,
+            friendship_request_id=self.friendship_request_id,
+        )
+
+    async def test_successful(self, mocked_get_pending_request):
+        friendship_request = FriendshipRequest(
+            id=uuid4(),
+            sender_id=self.sender_id,
+            receiver_id=uuid4(),
+            status=enums.FriendshipRequestStatusEnum.pending,
+            timestamp=helpers.get_utc_now(),
+        )
+        mocked_get_pending_request.return_value = friendship_request
+
+        assert (
+            await FriendshipRequestService._get_pending_request_sent_by_user(
+                friendship_request_repository=self.mocked_friendship_request_repository,
+                friendship_request_id=self.friendship_request_id,
+                user_id=self.sender_id,
+            )
+            == friendship_request
+        )
+        mocked_get_pending_request.assert_awaited_once_with(
+            friendship_request_repository=self.mocked_friendship_request_repository,
+            friendship_request_id=self.friendship_request_id,
+        )
+
+
+@patch(
+    "app.domain.services.friendship_request_service.FriendshipRequestService."
+    "_get_pending_request",
+    autospec=True,
+)
+class TestGetPendingRequestReceivedByUser:
+    receiver_id = uuid4()
+    mocked_friendship_request_repository = Mock()
+    friendship_request_id = uuid4()
+
+    @pytest.mark.parametrize(
+        "get_pending_request_side_effect",
+        (
+            PendingFriendshipRequestDoesNotExist,
+            FriendshipRequest(
+                id=uuid4(),
+                sender_id=uuid4(),
+                receiver_id=uuid4(),
+                status=enums.FriendshipRequestStatusEnum.pending,
+                timestamp=helpers.get_utc_now(),
+            ),
+        ),
+    )
+    async def test_raises_exception_when_request_not_found(
+        self, mocked_get_pending_request, get_pending_request_side_effect
+    ):
+        mocked_get_pending_request.side_effect = [get_pending_request_side_effect]
+
+        with pytest.raises(PendingFriendshipRequestDoesNotExist):
+            await FriendshipRequestService._get_pending_request_sent_by_user(
+                friendship_request_repository=self.mocked_friendship_request_repository,
+                friendship_request_id=self.friendship_request_id,
+                user_id=self.receiver_id,
+            )
+        mocked_get_pending_request.assert_awaited_once_with(
+            friendship_request_repository=self.mocked_friendship_request_repository,
+            friendship_request_id=self.friendship_request_id,
+        )
+
+    async def test_successful(self, mocked_get_pending_request):
+        friendship_request = FriendshipRequest(
+            id=uuid4(),
+            sender_id=uuid4(),
+            receiver_id=self.receiver_id,
+            status=enums.FriendshipRequestStatusEnum.pending,
+            timestamp=helpers.get_utc_now(),
+        )
+        mocked_get_pending_request.return_value = friendship_request
+
+        assert (
+            await FriendshipRequestService._get_pending_request_received_by_user(
+                friendship_request_repository=self.mocked_friendship_request_repository,
+                friendship_request_id=self.friendship_request_id,
+                user_id=self.receiver_id,
+            )
+            == friendship_request
+        )
+        mocked_get_pending_request.assert_awaited_once_with(
+            friendship_request_repository=self.mocked_friendship_request_repository,
+            friendship_request_id=self.friendship_request_id,
+        )
+
+
+@patch(
     "app.domain.services.friendship_request_service.FriendshipRequestRepository",
     autospec=True,
 )
 @patch(
     "app.domain.services.friendship_request_service.FriendshipRepository", autospec=True
 )
-@patch(
-    "app.domain.services.friendship_request_service.FriendshipRequestService"
-    "._get_pending_request_received_by_user",
+@patch.object(
+    FriendshipRequestService,
+    "_get_pending_request_received_by_user",
     autospec=True,
 )
 class TestAcceptFriendshipRequest:
@@ -408,7 +523,7 @@ class TestAcceptFriendshipRequest:
             mocked_friendship_request_repository.return_value.__aenter__.return_value
         )
         mocked_get_pending_request_received_by_user.side_effect = (
-            PendingFriendshipRequestForUserDoesNotExist
+            PendingFriendshipRequestDoesNotExist
         )
         mocked_friendship_repository_instance = (
             mocked_friendship_repository.return_value.__aenter__.return_value
@@ -416,7 +531,7 @@ class TestAcceptFriendshipRequest:
         user_id = uuid4()
         friendship_request_id = uuid4()
 
-        with pytest.raises(PendingFriendshipRequestForUserDoesNotExist):
+        with pytest.raises(PendingFriendshipRequestDoesNotExist):
             await FriendshipRequestService.accept_friendship_request(
                 user_id=user_id, friendship_request_id=friendship_request_id
             )
@@ -434,9 +549,9 @@ class TestAcceptFriendshipRequest:
     "app.domain.services.friendship_request_service.FriendshipRequestRepository",
     autospec=True,
 )
-@patch(
-    "app.domain.services.friendship_request_service.FriendshipRequestService"
-    "._get_pending_request_received_by_user",
+@patch.object(
+    FriendshipRequestService,
+    "_get_pending_request_received_by_user",
     autospec=True,
 )
 class TestRejectFriendshipRequest:
@@ -481,17 +596,86 @@ class TestRejectFriendshipRequest:
             mocked_friendship_request_repository.return_value.__aenter__.return_value
         )
         mocked_get_pending_request_received_by_user.side_effect = (
-            PendingFriendshipRequestForUserDoesNotExist
+            PendingFriendshipRequestDoesNotExist
         )
         user_id = uuid4()
         friendship_request_id = uuid4()
 
-        with pytest.raises(PendingFriendshipRequestForUserDoesNotExist):
+        with pytest.raises(PendingFriendshipRequestDoesNotExist):
             await FriendshipRequestService.reject_friendship_request(
                 user_id=user_id, friendship_request_id=friendship_request_id
             )
 
         mocked_get_pending_request_received_by_user.assert_awaited_once_with(
+            friendship_request_repository=mocked_friendship_request_repository_instance,
+            friendship_request_id=friendship_request_id,
+            user_id=user_id,
+        )
+        mocked_friendship_request_repository_instance.update_status.assert_not_awaited()
+
+
+@patch(
+    "app.domain.services.friendship_request_service.FriendshipRequestRepository",
+    autospec=True,
+)
+@patch.object(
+    FriendshipRequestService,
+    "_get_pending_request_sent_by_user",
+    autospec=True,
+)
+class TestCancelFriendshipRequest:
+    async def test_successful(
+        self,
+        mocked_get_pending_request_sent_by_user,
+        mocked_friendship_request_repository,
+    ):
+        friendship_request = FriendshipRequest(
+            id=uuid4(),
+            sender_id=uuid4(),
+            receiver_id=uuid4(),
+            status=enums.FriendshipRequestStatusEnum.pending,
+            timestamp=helpers.get_utc_now(),
+        )
+        mocked_friendship_request_repository_instance = (
+            mocked_friendship_request_repository.return_value.__aenter__.return_value
+        )
+        mocked_get_pending_request_sent_by_user.return_value = friendship_request
+
+        await FriendshipRequestService.cancel_friendship_request(
+            user_id=friendship_request.receiver_id,
+            friendship_request_id=friendship_request.id,
+        )
+
+        mocked_get_pending_request_sent_by_user.assert_awaited_once_with(
+            friendship_request_repository=mocked_friendship_request_repository_instance,
+            friendship_request_id=friendship_request.id,
+            user_id=friendship_request.receiver_id,
+        )
+        mocked_friendship_request_repository_instance.update_status.assert_awaited_once_with(  # noqa
+            friendship_request_id=friendship_request.id,
+            status=enums.FriendshipRequestStatusEnum.cancelled,
+        )
+
+    async def test_failure(
+        self,
+        mocked_get_pending_request_sent_by_user,
+        mocked_friendship_request_repository,
+    ):
+        mocked_friendship_request_repository_instance = (
+            mocked_friendship_request_repository.return_value.__aenter__.return_value
+        )
+        mocked_get_pending_request_sent_by_user.side_effect = (
+            PendingFriendshipRequestDoesNotExist
+        )
+        user_id = uuid4()
+        friendship_request_id = uuid4()
+
+        with pytest.raises(PendingFriendshipRequestDoesNotExist):
+            await FriendshipRequestService.cancel_friendship_request(
+                user_id=user_id, friendship_request_id=friendship_request_id
+            )
+
+        mocked_get_pending_request_sent_by_user.assert_awaited_once_with(
             friendship_request_repository=mocked_friendship_request_repository_instance,
             friendship_request_id=friendship_request_id,
             user_id=user_id,

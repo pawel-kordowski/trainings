@@ -13,7 +13,7 @@ class TestAcceptFriendshipRequest:
     def get_query(friendship_request_id: UUID):
         return f"""
         mutation {{
-            acceptFriendshipRequest(
+            cancelFriendshipRequest(
                 input: {{
                     friendshipRequestId: "{friendship_request_id}"
                 }}
@@ -43,7 +43,7 @@ class TestAcceptFriendshipRequest:
         self, mocked_friendship_request_service, client
     ):
         error_message = "Error message"
-        mocked_friendship_request_service.accept_friendship_request.side_effect = (
+        mocked_friendship_request_service.cancel_friendship_request.side_effect = (
             AppError(message=error_message)
         )
         friendship_request_id = uuid4()
@@ -56,11 +56,11 @@ class TestAcceptFriendshipRequest:
         )
 
         assert response.status_code == 200
-        assert response.json()["data"]["acceptFriendshipRequest"] == {
+        assert response.json()["data"]["cancelFriendshipRequest"] == {
             "__typename": "Error",
             "message": error_message,
         }
-        mocked_friendship_request_service.accept_friendship_request.assert_awaited_once_with(  # noqa
+        mocked_friendship_request_service.cancel_friendship_request.assert_awaited_once_with(  # noqa
             user_id=user_id, friendship_request_id=friendship_request_id
         )
 
@@ -77,10 +77,10 @@ class TestAcceptFriendshipRequest:
         )
 
         assert response.status_code == 200
-        assert response.json()["data"]["acceptFriendshipRequest"] == {
+        assert response.json()["data"]["cancelFriendshipRequest"] == {
             "__typename": "OK",
             "message": "OK",
         }
-        mocked_friendship_request_service.accept_friendship_request.assert_awaited_once_with(  # noqa
+        mocked_friendship_request_service.cancel_friendship_request.assert_awaited_once_with(  # noqa
             user_id=user_id, friendship_request_id=friendship_request_id
         )
