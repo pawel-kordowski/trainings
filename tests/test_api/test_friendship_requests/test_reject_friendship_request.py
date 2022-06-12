@@ -9,7 +9,8 @@ from app.jwt_tokens import create_access_token
     "app.graphql.mutations.friendship_requests.FriendshipRequestService", autospec=True
 )
 class TestRejectFriendshipRequest:
-    def get_query(self, friendship_request_id: UUID):
+    @staticmethod
+    def get_query(friendship_request_id: UUID):
         return f"""
         mutation {{
             rejectFriendshipRequest(
@@ -55,7 +56,7 @@ class TestRejectFriendshipRequest:
         )
 
         assert response.status_code == 200
-        assert response.json()["data"]["acceptFriendshipRequest"] == {
+        assert response.json()["data"]["rejectFriendshipRequest"] == {
             "__typename": "Error",
             "message": error_message,
         }
@@ -76,7 +77,7 @@ class TestRejectFriendshipRequest:
         )
 
         assert response.status_code == 200
-        assert response.json()["data"]["acceptFriendshipRequest"] == {
+        assert response.json()["data"]["rejectFriendshipRequest"] == {
             "__typename": "OK",
             "message": "OK",
         }
